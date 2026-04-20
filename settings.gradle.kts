@@ -2,6 +2,7 @@ rootProject.name = "seatflow-msa"
 
 include(
     "services:auth-service",
+    "services:user-service",
     "services:reservation-service",
     "services:seat-service",
     "services:payment-service",
