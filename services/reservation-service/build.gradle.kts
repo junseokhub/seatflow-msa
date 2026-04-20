@@ -1,20 +1,6 @@
 plugins {
-	java
-	id("org.springframework.boot") version "3.5.13"
-	id("io.spring.dependency-management") version "1.1.7"
-}
-
-group = "com.seatflow"
-version = "0.0.1-SNAPSHOT"
-
-java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
-	}
-}
-
-repositories {
-	mavenCentral()
+	id("org.springframework.boot")
+	id("io.spring.dependency-management")
 }
 
 dependencies {
@@ -26,8 +12,4 @@ dependencies {
 	runtimeOnly("com.mysql:mysql-connector-j")
 
 	testImplementation("org.springframework.kafka:spring-kafka-test")
-}
-
-tasks.withType<Test> {
-	useJUnitPlatform()
 }
