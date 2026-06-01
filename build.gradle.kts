@@ -4,6 +4,7 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7" apply false
 }
 
+
 allprojects {
     group = "com.seatflow"
     version = "0.0.1-SNAPSHOT"
@@ -34,5 +35,11 @@ configure(subprojects.filter { it.parent?.name == "services" }) {
 
     tasks.withType<Test> {
         useJUnitPlatform()
+    }
+
+    tasks.withType<org.springframework.boot.gradle.tasks.bundling.BootJar> {
+        layered {
+            enabled = true
+        }
     }
 }
