@@ -4,7 +4,6 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7" apply false
 }
 
-
 allprojects {
     group = "com.seatflow"
     version = "0.0.1-SNAPSHOT"
@@ -41,5 +40,21 @@ configure(subprojects.filter { it.parent?.name == "services" }) {
         layered {
             enabled = true
         }
+    }
+}
+
+configure(subprojects.filter { it.parent?.name == "libs" }) {
+    apply(plugin = "java")
+    apply(plugin = "io.spring.dependency-management")
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
+
+    dependencies {
+        compileOnly("org.projectlombok:lombok")
+        annotationProcessor("org.projectlombok:lombok")
     }
 }

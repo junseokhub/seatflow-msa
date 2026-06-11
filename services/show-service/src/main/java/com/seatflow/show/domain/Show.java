@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Document(collection = "shows")
 @Getter
 public class Show {
-
+    // 기본적으로 리플렉션으로 객체 생성, final 있으면 기본 생성샂로 인스턴스 만든 뒤 필드 값에 주입하는 방식이 안되기 때문에 역직렬화에 문제 가능성
     @Id
     private String id;
 
