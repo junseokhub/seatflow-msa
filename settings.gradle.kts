@@ -1,6 +1,7 @@
 rootProject.name = "seatflow-msa"
 
 include(
+    "libs:common-web",
     "services:auth-service",
     "services:user-service",
     "services:reservation-service",
