@@ -52,9 +52,4 @@ configure(subprojects.filter { it.parent?.name == "libs" }) {
             languageVersion = JavaLanguageVersion.of(21)
         }
     }
-
-    dependencies {
-        compileOnly("org.projectlombok:lombok")
-        annotationProcessor("org.projectlombok:lombok")
-    }
 }
