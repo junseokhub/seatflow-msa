@@ -1,4 +1,5 @@
 .gradle
-build
+build/
+!build/libs/
 src/test
 *.md
