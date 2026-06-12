@@ -1,14 +1,14 @@
 # Gradle
 .gradle/
-!build/libs/
 build/
+!build/libs/
 *.gradle
 *.gradle.kts
 gradlew
 gradlew.bat
 gradle/
 
-# Source (빌드 결과물만 필요)
+# Source
 src/
 
 # IDE
