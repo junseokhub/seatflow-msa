@@ -5,7 +5,7 @@ import com.seatflow.user.domain.User;
 import java.time.LocalDateTime;
 
 public record UserResponse(
-        Long id,
+        String id,
         String email,
         String name,
         String phone,

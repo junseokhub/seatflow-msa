@@ -4,5 +4,5 @@ public final class EventTopic {
 
     private EventTopic() {}
 
-    public static final String USER_CREATED = "user-created";
+    public static final String USER_REGISTERED = "user.registered";
 }

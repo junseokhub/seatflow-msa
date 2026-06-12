@@ -1,5 +1,5 @@
 CREATE TABLE users (
-   id         BIGINT          NOT NULL AUTO_INCREMENT,
+   id         VARCHAR(36)     NOT NULL,
    email      VARCHAR(255)    NOT NULL,
    name       VARCHAR(100)    NOT NULL,
    phone      VARCHAR(20),
