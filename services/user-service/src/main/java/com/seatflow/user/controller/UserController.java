@@ -5,6 +5,7 @@ import com.seatflow.user.domain.User;
 import com.seatflow.user.dto.CreateUserRequest;
 import com.seatflow.user.dto.UserResponse;
 import com.seatflow.user.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,7 +18,7 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<UserResponse>> createUser(@RequestBody CreateUserRequest request) {
+    public ResponseEntity<ApiResponse<UserResponse>> createUser(@RequestBody @Valid CreateUserRequest request) {
         User user = userService.createUser(request.email(), request.name(), request.phone());
         return ResponseEntity.ok(ApiResponse.ok(UserResponse.from(user)));
     }
