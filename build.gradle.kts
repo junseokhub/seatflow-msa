@@ -52,4 +52,13 @@ configure(subprojects.filter { it.parent?.name == "libs" }) {
             languageVersion = JavaLanguageVersion.of(21)
         }
     }
+
+    plugins.withId("org.springframework.boot") {
+        tasks.withType<org.springframework.boot.gradle.tasks.bundling.BootJar> {
+            enabled = false
+        }
+        tasks.withType<Jar> {
+            enabled = true
+        }
+    }
 }
