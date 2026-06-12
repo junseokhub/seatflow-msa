@@ -1,10 +1,14 @@
 package com.seatflow.user.service;
 
+import com.seatflow.common.event.EventEnvelope;
+import com.seatflow.common.event.EventTopic;
+import com.seatflow.common.event.user.UserCreatedEvent;
 import com.seatflow.common.exception.BusinessException;
 import com.seatflow.user.domain.User;
 import com.seatflow.user.exception.UserErrorCode;
 import com.seatflow.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Transactional
     public User createUser(String email, String name, String phone) {
@@ -29,7 +34,23 @@ public class UserService {
                 .phone(phone)
                 .build();
 
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+
+        kafkaTemplate.send(
+                EventTopic.USER_CREATED,
+                String.valueOf(savedUser.getId()),
+                EventEnvelope.of(
+                        EventTopic.USER_CREATED,
+                        "user-service",
+                        new UserCreatedEvent(
+                                savedUser.getId(),
+                                savedUser.getEmail(),
+                                savedUser.getName()
+                        )
+                )
+        );
+
+        return savedUser;
     }
 
     @Transactional(readOnly = true)
