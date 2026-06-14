@@ -1,4 +1,4 @@
-package com.seatflow.auth.jwt;
+package com.seatflow.auth.config.properties;
 
 import lombok.Getter;
 import lombok.Setter;
