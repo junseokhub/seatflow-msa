@@ -1,5 +1,6 @@
 package com.seatflow.auth.jwt;
 
+import com.seatflow.auth.config.properties.JwtProperties;
 import com.seatflow.auth.exception.AuthErrorCode;
 import com.seatflow.common.exception.BusinessException;
 import io.jsonwebtoken.Claims;
