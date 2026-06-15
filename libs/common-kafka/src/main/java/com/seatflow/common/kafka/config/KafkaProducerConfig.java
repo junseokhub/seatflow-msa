@@ -1,8 +1,6 @@
 package com.seatflow.common.kafka.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -20,17 +18,11 @@ import java.util.Map;
 @EnableConfigurationProperties(KafkaBootstrapProperties.class)
 public class KafkaProducerConfig {
 
-    private ObjectMapper createObjectMapper() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
-        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        return objectMapper;
-    }
-
     @Bean
     public ProducerFactory<String, Object> producerFactory(
-            KafkaBootstrapProperties kafkaProperties) {
-        JsonSerializer<Object> jsonSerializer = new JsonSerializer<>(createObjectMapper());
+            KafkaBootstrapProperties kafkaProperties,
+            ObjectMapper kafkaObjectMapper) {
+        JsonSerializer<Object> jsonSerializer = new JsonSerializer<>(kafkaObjectMapper);
 
         Map<String, Object> config = new HashMap<>();
         config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaProperties.bootstrapServers());
