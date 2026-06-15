@@ -93,4 +93,5 @@ public class AuthController {
         AuthService.ValidateResult result = authService.validate(accessToken);
         return ResponseEntity.ok(ApiResponse.ok(new ValidateResponse(result.userId(), result.email())));
     }
+
 }
