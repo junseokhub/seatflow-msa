@@ -36,6 +36,17 @@ public class User {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    @PrePersist
+    void prePersist() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+
     @Builder
     private User(String id, String email, String name, String phone) {
         this.id = id;
