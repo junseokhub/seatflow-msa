@@ -20,7 +20,8 @@ import java.util.Map;
 @EnableConfigurationProperties(KafkaBootstrapProperties.class)
 public class KafkaConsumerConfig {
 
-    private ObjectMapper createObjectMapper() {
+    @Bean
+    public ObjectMapper kafkaObjectMapper() {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -29,9 +30,10 @@ public class KafkaConsumerConfig {
 
     @Bean
     public ConsumerFactory<String, Object> consumerFactory(
-            KafkaBootstrapProperties kafkaProperties) {
+            KafkaBootstrapProperties kafkaProperties,
+            ObjectMapper kafkaObjectMapper) {
 
-        JsonDeserializer<Object> jsonDeserializer = new JsonDeserializer<>(createObjectMapper());
+        JsonDeserializer<Object> jsonDeserializer = new JsonDeserializer<>(kafkaObjectMapper);
         jsonDeserializer.addTrustedPackages("*");
 
         Map<String, Object> config = new HashMap<>();
