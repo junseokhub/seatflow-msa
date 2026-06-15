@@ -88,4 +88,8 @@ public class JwtProvider {
             );
         }
     }
+
+    public long getRefreshTokenExpiration() {
+        return jwtProperties.getRefreshTokenExpiration();
+    }
 }
