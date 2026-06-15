@@ -61,4 +61,10 @@ configure(subprojects.filter { it.parent?.name == "libs" }) {
             enabled = true
         }
     }
+
+    afterEvaluate {
+        tasks.withType<org.springframework.boot.gradle.tasks.bundling.BootJar> {
+            enabled = false
+        }
+    }
 }
