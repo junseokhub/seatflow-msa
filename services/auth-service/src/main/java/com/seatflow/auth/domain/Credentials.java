@@ -28,16 +28,16 @@ public class Credentials {
     private String email;
 
     @Column(nullable = false)
-    private String password;
+    private String passwordHash;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
     @Builder
-    private Credentials(String userId, String email, String password) {
+    private Credentials(String userId, String email, String passwordHash) {
         this.id = UUID.randomUUID().toString();
         this.userId = userId;
         this.email = email;
-        this.password = password;
+        this.passwordHash = passwordHash;
     }
 }
