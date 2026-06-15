@@ -1,0 +1,2 @@
+com.seatflow.common.kafka.config.KafkaProducerConfig
+com.seatflow.common.kafka.config.KafkaConsumerConfig
