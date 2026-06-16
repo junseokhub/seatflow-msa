@@ -25,7 +25,7 @@ public class Seat {
     private String section;
 
     @Column(nullable = false)
-    private String row;
+    private String seatRow;
 
     @Column(nullable = false)
     private int number;
@@ -56,10 +56,10 @@ public class Seat {
     }
 
     @Builder
-    private Seat(String showId, String section, String row, int number, int price) {
+    private Seat(String showId, String section, String seatRow, int number, int price) {
         this.showId = showId;
         this.section = section;
-        this.row = row;
+        this.seatRow = seatRow;
         this.number = number;
         this.price = price;
     }

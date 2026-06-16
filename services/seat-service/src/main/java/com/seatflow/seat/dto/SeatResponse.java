@@ -7,7 +7,7 @@ public record SeatResponse(
         Long id,
         String showId,
         String section,
-        String row,
+        String seatRow,
         int number,
         SeatStatus status,
         int price
@@ -17,7 +17,7 @@ public record SeatResponse(
                 seat.getId(),
                 seat.getShowId(),
                 seat.getSection(),
-                seat.getRow(),
+                seat.getSeatRow(),
                 seat.getNumber(),
                 seat.getStatus(),
                 seat.getPrice()
