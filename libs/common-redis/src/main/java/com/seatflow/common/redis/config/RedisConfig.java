@@ -1,11 +1,12 @@
-package com.seatflow.auth.config;
+package com.seatflow.common.redis.config;
 
-import com.seatflow.auth.config.properties.RedisProperties;
+import com.seatflow.common.redis.properties.RedisProperties;
 import io.lettuce.core.ClientOptions;
 import io.lettuce.core.SocketOptions;
 import io.lettuce.core.cluster.ClusterClientOptions;
 import io.lettuce.core.cluster.ClusterTopologyRefreshOptions;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisClusterConfiguration;
@@ -21,19 +22,20 @@ import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor
+@EnableConfigurationProperties(RedisProperties.class)
 public class RedisConfig {
 
     private final RedisProperties redisProperties;
 
     @Bean
     public RedisConnectionFactory redisConnectionFactory() {
-        List<RedisNode> redisNodes = redisProperties.getCluster().getNodes().stream()
+        List<RedisNode> redisNodes = redisProperties.cluster().nodes().stream()
                 .map(node -> new RedisNode(node.split(":")[0], Integer.parseInt(node.split(":")[1])))
                 .toList();
 
         RedisClusterConfiguration clusterConfiguration = new RedisClusterConfiguration();
         clusterConfiguration.setClusterNodes(redisNodes);
-        clusterConfiguration.setPassword(redisProperties.getPassword());
+        clusterConfiguration.setPassword(redisProperties.password());
 
         SocketOptions socketOptions = SocketOptions.builder()
                 .connectTimeout(Duration.ofMillis(100L))
