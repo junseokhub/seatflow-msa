@@ -46,11 +46,13 @@ public class RedisProvider {
 
     // 로그인 실패 횟수 증가
     public long incrementLoginFail(String email) {
-        Long count = redisTemplate.opsForValue().increment(LOGIN_FAIL_PREFIX + email);
-        redisTemplate.expire(LOGIN_FAIL_PREFIX + email, 15, TimeUnit.MINUTES);
+        String key = LOGIN_FAIL_PREFIX + email;
+        Long count = redisTemplate.opsForValue().increment(key);
+        if (count != null && count == 1L) {
+            redisTemplate.expire(key, 15, TimeUnit.MINUTES);
+        }
         return count == null ? 0 : count;
     }
-
     // 로그인 실패 횟수 초기화
     public void resetLoginFail(String email) {
         redisTemplate.delete(LOGIN_FAIL_PREFIX + email);
