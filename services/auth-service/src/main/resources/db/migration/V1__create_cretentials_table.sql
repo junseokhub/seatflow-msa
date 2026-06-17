@@ -1,9 +1,9 @@
 CREATE TABLE credentials (
-     id            VARCHAR(36)   NOT NULL,
-     user_id       VARCHAR(36)   NOT NULL UNIQUE,
-     email         VARCHAR(255)  NOT NULL UNIQUE,
-     password_hash VARCHAR(255)  NOT NULL,
-     created_at    DATETIME(6)   NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-     updated_at    DATETIME(6)   NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
-     PRIMARY KEY (id)
+    id            VARCHAR(36)   NOT NULL,
+    user_id       VARCHAR(36)   NOT NULL UNIQUE,
+    email         VARCHAR(255)  NOT NULL UNIQUE,
+    password_hash VARCHAR(255)  NOT NULL,
+    created_at    DATETIME(6)   NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at    DATETIME(6)   NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    PRIMARY KEY (id)
 );

@@ -1,5 +1,6 @@
 package com.seatflow.auth.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.seatflow.auth.domain.Credentials;
 import com.seatflow.auth.exception.AuthErrorCode;
 import com.seatflow.auth.jwt.JwtProvider;
@@ -9,14 +10,17 @@ import com.seatflow.common.event.EventEnvelope;
 import com.seatflow.common.event.EventTopic;
 import com.seatflow.common.event.user.UserRegisteredEvent;
 import com.seatflow.common.exception.BusinessException;
+import com.seatflow.common.outbox.Outbox;
+import com.seatflow.common.outbox.OutboxRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.kafka.core.KafkaTemplate;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -25,7 +29,8 @@ public class AuthService {
     private final BCryptPasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
     private final RedisProvider redisProvider;
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final OutboxRepository outboxRepository;
+    private final ObjectMapper kafkaObjectMapper;
 
     @Transactional
     public void signup(String email, String password, String name) {
@@ -47,15 +52,27 @@ public class AuthService {
 
         credentialsRepository.save(credentials);
 
-        kafkaTemplate.send(
-                EventTopic.USER_REGISTERED,
-                userId,
-                EventEnvelope.of(
-                        EventTopic.USER_REGISTERED,
-                        "auth-service",
-                        new UserRegisteredEvent(userId, email, name)
-                )
-        );
+        // Kafka 직접 발행 대신 Outbox에 저장 (같은 트랜잭션)
+        try {
+            EventEnvelope<UserRegisteredEvent> event = EventEnvelope.of(
+                    EventTopic.USER_REGISTERED,
+                    "auth-service",
+                    new UserRegisteredEvent(userId, email, name)
+            );
+            String payload = kafkaObjectMapper.writeValueAsString(event);
+
+            outboxRepository.save(Outbox.builder()
+                    .eventId(event.eventId())
+                    .eventType(EventTopic.USER_REGISTERED)
+                    .messageKey(userId)
+                    .payload(payload)
+                    .build());
+        } catch (Exception e) {
+            throw new BusinessException(
+                    AuthErrorCode.INTERNAL_ERROR.getStatus().value(),
+                    AuthErrorCode.INTERNAL_ERROR.getMessage()
+            );
+        }
     }
 
     @Transactional(readOnly = true)
@@ -126,7 +143,6 @@ public class AuthService {
         if (remaining > 0) {
             redisProvider.addBlacklist(accessToken, remaining);
         }
-        // refreshToken에서 userId 추출
         String userId = jwtProvider.getClaims(refreshToken).getSubject();
         redisProvider.deleteRefreshToken(userId);
     }
