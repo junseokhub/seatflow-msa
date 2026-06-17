@@ -1,6 +1,5 @@
 plugins {
-	id("org.springframework.boot")
-	id("io.spring.dependency-management")
+	id("seatflow.application-conventions")
 }
 
 dependencies {
@@ -14,7 +13,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.springframework.boot:spring-boot-starter-security")
 	implementation("org.springframework.boot:spring-boot-starter-data-redis")
-implementation("org.flywaydb:flyway-core")
+	implementation("org.flywaydb:flyway-core")
 	implementation("org.flywaydb:flyway-mysql")
 
 	implementation("io.jsonwebtoken:jjwt-api:0.12.6")

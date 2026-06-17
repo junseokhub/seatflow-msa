@@ -1,8 +1,5 @@
 plugins {
-    java
-    `java-library`
-    id("org.springframework.boot")
-    id("io.spring.dependency-management")
+    id("seatflow.library-conventions")
 }
 
 dependencies {

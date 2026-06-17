@@ -1,11 +1,8 @@
 plugins {
-    java
-    id("org.springframework.boot")
-    id("io.spring.dependency-management")
+    id("seatflow.library-conventions")
 }
 
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-web")
-    compileOnly("org.projectlombok:lombok")
-    annotationProcessor("org.projectlombok:lombok")
+    api("org.springframework.boot:spring-boot-starter-web")
+    compileOnly("org.springframework.boot:spring-boot-autoconfigure")
 }
