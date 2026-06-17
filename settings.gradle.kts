@@ -5,6 +5,7 @@ include(
     "libs:common-events",
     "libs:common-kafka",
     "libs:common-redis",
+    "libs:common-outbox",
     "services:auth-service",
     "services:user-service",
     "services:reservation-service",
