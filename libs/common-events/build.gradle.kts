@@ -1,7 +1,3 @@
 plugins {
-    java
-    `java-library`
-}
-
-dependencies {
+    id("seatflow.library-conventions")
 }
