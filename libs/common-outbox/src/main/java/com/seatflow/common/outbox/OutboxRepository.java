@@ -12,17 +12,29 @@ public interface OutboxRepository extends JpaRepository<Outbox, Long> {
     @Query(value = """
         SELECT * FROM outbox
         WHERE status = 'PENDING'
+          AND next_retry_at <= :now
         ORDER BY id
         LIMIT :limit
         FOR UPDATE SKIP LOCKED
         """, nativeQuery = true)
-    List<Outbox> findPendingForUpdate(@Param("limit") int limit);
+    List<Outbox> findPendingForUpdate(@Param("now") LocalDateTime now, @Param("limit") int limit);
 
     @Query(value = """
         SELECT * FROM outbox
         WHERE status = 'PUBLISHING'
-        AND publishing_at < :threshold
+          AND publishing_at < :threshold
         FOR UPDATE SKIP LOCKED
         """, nativeQuery = true)
     List<Outbox> findStuckPublishing(@Param("threshold") LocalDateTime threshold);
+
+    @Query(value = """
+        SELECT * FROM outbox
+        WHERE status = 'FAILED'
+        ORDER BY id
+        LIMIT :limit
+        FOR UPDATE SKIP LOCKED
+        """, nativeQuery = true)
+    List<Outbox> findFailedForUpdate(@Param("limit") int limit);
+
+    long countByStatus(OutboxStatus status);
 }

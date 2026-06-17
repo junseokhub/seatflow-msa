@@ -37,6 +37,9 @@ public class Outbox {
     @Column(nullable = false)
     private int retryCount;
 
+    @Column(nullable = false)
+    private LocalDateTime nextRetryAt;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -48,7 +51,9 @@ public class Outbox {
 
     @PrePersist
     void prePersist() {
-        this.createdAt = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now();
+        this.createdAt = now;
+        this.nextRetryAt = now;        // 생성 즉시 발행 대상
         this.status = OutboxStatus.PENDING;
         this.retryCount = 0;
     }
@@ -64,17 +69,28 @@ public class Outbox {
         this.publishedAt = LocalDateTime.now();
     }
 
-    public void markPendingWithRetry() {
+    /** 발행 실패 → 백오프된 시각에 재시도 */
+    public void markRetry(LocalDateTime nextRetryAt) {
         this.status = OutboxStatus.PENDING;
         this.retryCount++;
+        this.nextRetryAt = nextRetryAt;
+    }
+
+    /** PUBLISHING 스턱 복구 → 즉시 재시도 대상으로 */
+    public void markPendingNow() {
+        this.status = OutboxStatus.PENDING;
+        this.nextRetryAt = LocalDateTime.now();
+    }
+
+    /** FAILED 격리 → 운영자가 수동 재투입(redrive) */
+    public void markRedrive() {
+        this.status = OutboxStatus.PENDING;
+        this.retryCount = 0;
+        this.nextRetryAt = LocalDateTime.now();
     }
 
     public void markFailed() {
         this.status = OutboxStatus.FAILED;
-    }
-
-    public void markPending() {
-        this.status = OutboxStatus.PENDING;
     }
 
     public boolean isExceededRetry(int maxRetry) {
