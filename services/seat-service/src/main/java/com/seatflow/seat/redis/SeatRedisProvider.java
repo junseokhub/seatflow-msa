@@ -29,7 +29,7 @@ public class SeatRedisProvider {
         else
             return 0
         end
-        """, Long.class);
+        """, Long.class); // 반환 값 1(삭제), 0 (미소유), -1 (미점유)
 
     public long releaseIfOwner(String showId, Long seatId, String userId) {
         String key = SEAT_HOLD_PREFIX + showId + ":" + seatId;
