@@ -33,23 +33,19 @@ public class SeatService {
 
     @Transactional
     public void releaseSeat(String showId, Long seatId, String userId) {
-        String holder = seatRedisProvider.getHolder(showId, seatId);
+        long result = seatRedisProvider.releaseIfOwner(showId, seatId, userId);
 
-        if (holder == null) {
+        if (result == -1) {
             throw new BusinessException(
                     SeatErrorCode.SEAT_NOT_HELD.getStatus().value(),
-                    SeatErrorCode.SEAT_NOT_HELD.getMessage()
-            );
+                    SeatErrorCode.SEAT_NOT_HELD.getMessage());
         }
-
-        if (!holder.equals(userId)) {
+        if (result == 0) {
             throw new BusinessException(
                     SeatErrorCode.SEAT_HOLD_NOT_OWNED.getStatus().value(),
-                    SeatErrorCode.SEAT_HOLD_NOT_OWNED.getMessage()
-            );
+                    SeatErrorCode.SEAT_HOLD_NOT_OWNED.getMessage());
         }
 
-        seatRedisProvider.release(showId, seatId);
         log.info("Seat released: showId={}, seatId={}, userId={}", showId, seatId, userId);
     }
 
