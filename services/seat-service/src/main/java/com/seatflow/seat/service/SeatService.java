@@ -50,9 +50,9 @@ public class SeatService {
     }
 
     @Transactional
-    public void holdSeat(String showId, Long seatId, String userId) {
-        // 1. Redis 점유를 먼저 잡는다. 원자적 게이트, 동시 점유 배제
-        boolean acquired = seatRedisProvider.hold(showId, seatId, userId);
+    public void holdSeats(String showId, List<Long> seatIds, String userId) {
+        // 1. 멀티 좌석 게이트를 먼저 잡는다.(원자적)
+        boolean acquired = seatRedisProvider.holdAll(showId, seatIds, userId);
         if (!acquired) {
             throw new BusinessException(
                     SeatErrorCode.SEAT_ALREADY_HELD.getStatus().value(),
@@ -60,31 +60,37 @@ public class SeatService {
         }
 
         try {
-            // 2. 점유를 쥔 상태에서 DB로 '판매 완료' 검증
-            Seat seat = seatRepository.findById(seatId)
-                    .orElseThrow(() -> new BusinessException(
-                            SeatErrorCode.SEAT_NOT_FOUND.getStatus().value(),
-                            SeatErrorCode.SEAT_NOT_FOUND.getMessage()));
+            // 2. 점유를 쥔 상태에서 좌석들이 이미 팔렸는지 DB로 검증
+            List<Seat> seats = seatRepository.findAllById(seatIds);
 
-            if (seat.getStatus() == SeatStatus.RESERVED) {
+            if (seats.size() != seatIds.size()) { // 존재하지 않는 좌석이 섞임
+                throw new BusinessException(
+                        SeatErrorCode.SEAT_NOT_FOUND.getStatus().value(),
+                        SeatErrorCode.SEAT_NOT_FOUND.getMessage());
+            }
+            boolean anyReserved = seats.stream()
+                    .anyMatch(s -> s.getStatus() == SeatStatus.RESERVED);
+            if (anyReserved) {
                 throw new BusinessException(
                         SeatErrorCode.SEAT_ALREADY_RESERVED.getStatus().value(),
                         SeatErrorCode.SEAT_ALREADY_RESERVED.getMessage());
             }
 
-            // 3. 이벤트 발행 (seat dual-write는 추후 outbox로)
-            kafkaTemplate.send(
-                    EventTopic.SEAT_HELD,
-                    userId,
-                    EventEnvelope.of(EventTopic.SEAT_HELD, "seat-service",
-                            new SeatHeldEvent(userId, showId, seatId)));
+            // 3. 좌석별 점유 이벤트 발행
+            for (Long seatId : seatIds) {
+                kafkaTemplate.send(
+                        EventTopic.SEAT_HELD,
+                        userId,
+                        EventEnvelope.of(EventTopic.SEAT_HELD, "seat-service",
+                                new SeatHeldEvent(userId, showId, seatId)));
+            }
 
         } catch (RuntimeException e) {
-            // 검증 실패 / 발행 실패 -> 방금 잡은 점유를 되돌린다 (보상)
-            seatRedisProvider.releaseIfOwner(showId, seatId, userId);
+            // 하나라도 어긋나면 방금 잡은 점유 전부 되돌린다 (보상)
+            seatIds.forEach(id -> seatRedisProvider.releaseIfOwner(showId, id, userId));
             throw e;
         }
 
-        log.info("Seat held: showId={}, seatId={}, userId={}", showId, seatId, userId);
+        log.info("Seats held: showId={}, seatIds={}, userId={}", showId, seatIds, userId);
     }
 }
