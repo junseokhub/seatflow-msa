@@ -20,16 +20,16 @@ public class SeatRedisProvider {
 
     // GET -> 소유자 비교 -> 일치하면 DEL, 전부 한 번에 (원자적)
     private static final RedisScript<Long> RELEASE_IF_OWNER = new DefaultRedisScript<>("""
-        local holder = redis.call('GET', KEYS[1])
-        if holder == false then
-            return -1
-        elseif holder == ARGV[1] then
-            redis.call('DEL', KEYS[1])
-            return 1
-        else
-            return 0
-        end
-        """, Long.class); // 반환 값 1(삭제), 0 (미소유), -1 (미점유)
+            local holder = redis.call('GET', KEYS[1])
+            if holder == false then
+                return -1
+            elseif holder == ARGV[1] then
+                redis.call('DEL', KEYS[1])
+                return 1
+            else
+                return 0
+            end
+            """, Long.class); // 반환 값 1(삭제), 0 (미소유), -1 (미점유)
 
     public long releaseIfOwner(String showId, Long seatId, String userId) {
         String key = SEAT_HOLD_PREFIX + showId + ":" + seatId;
@@ -61,5 +61,32 @@ public class SeatRedisProvider {
     public boolean isHeld(String showId, Long seatId) {
         String key = SEAT_HOLD_PREFIX + showId + ":" + seatId;
         return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+    }
+
+    // 같은 공연 좌석들을 같은 슬롯에 모은다 (cluster-safe)
+    private String holdKey(String showId, Long seatId) {
+        return SEAT_HOLD_PREFIX + "{" + showId + "}:" + seatId;
+    }
+
+    private static final RedisScript<Long> HOLD_ALL = new DefaultRedisScript<>("""
+        for i = 1, #KEYS do
+            if redis.call('EXISTS', KEYS[i]) == 1 then
+                return -1
+            end
+        end
+        for i = 1, #KEYS do
+            redis.call('SET', KEYS[i], ARGV[1], 'EX', tonumber(ARGV[2]))
+        end
+        return 1
+        """, Long.class);
+
+    // 여러 좌석을 한 덩어리로 점유 (전부 아니면 전무)
+    public boolean holdAll(String showId, List<Long> seatIds, String userId) {
+        List<String> keys = seatIds.stream()
+                .map(id -> holdKey(showId, id))
+                .toList();
+        Long result = redisTemplate.execute(HOLD_ALL, keys,
+                userId, String.valueOf(HOLD_TTL_MINUTES * 60));   // TTL 초 단위
+        return result != null && result == 1;
     }
 }
