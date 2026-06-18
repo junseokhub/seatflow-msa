@@ -1,6 +1,7 @@
 package com.seatflow.seat.controller;
 
 import com.seatflow.common.response.ApiResponse;
+import com.seatflow.seat.dto.HoldSeatsRequest;
 import com.seatflow.seat.dto.SeatResponse;
 import com.seatflow.seat.service.SeatService;
 import lombok.RequiredArgsConstructor;
@@ -25,12 +26,12 @@ public class SeatController {
         ));
     }
 
-    @PostMapping("/{showId}/{seatId}/hold")
-    public ResponseEntity<ApiResponse<Void>> holdSeat(
+    @PostMapping("/{showId}/hold")
+    public ResponseEntity<ApiResponse<Void>> holdSeats(
             @PathVariable String showId,
-            @PathVariable Long seatId,
+            @RequestBody HoldSeatsRequest request,
             @RequestHeader("X-User-Id") String userId) {
-        seatService.holdSeat(showId, seatId, userId);
+        seatService.holdSeats(showId, request.seatIds(), userId);
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 
