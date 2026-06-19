@@ -18,23 +18,20 @@ public class SeatRedisProvider {
     private static final String SEAT_HOLD_PREFIX = "seat:hold:";
     private static final long HOLD_TTL_MINUTES = 5;
 
-    // GET -> 소유자 비교 -> 일치하면 DEL, 전부 한 번에 (원자적)
-    private static final RedisScript<Long> RELEASE_IF_OWNER = new DefaultRedisScript<>("""
-            local holder = redis.call('GET', KEYS[1])
-            if holder == false then
-                return -1
-            elseif holder == ARGV[1] then
-                redis.call('DEL', KEYS[1])
-                return 1
-            else
-                return 0
-            end
-            """, Long.class); // 반환 값 1(삭제), 0 (미소유), -1 (미점유)
-
     public long releaseIfOwner(String showId, Long seatId, String userId) {
-        String key = SEAT_HOLD_PREFIX + showId + ":" + seatId;
-        Long result = redisTemplate.execute(RELEASE_IF_OWNER, List.of(key), userId);
+        Long result = redisTemplate.execute(
+                RELEASE_IF_OWNER, List.of(holdKey(showId, seatId)), userId);
         return result == null ? -1 : result;
+    }
+
+    // 여러 좌석을 한 덩어리로 점유 (전부 아니면 전무)
+    public boolean holdAll(String showId, List<Long> seatIds, String userId) {
+        List<String> keys = seatIds.stream()
+                .map(id -> holdKey(showId, id))
+                .toList();
+        Long result = redisTemplate.execute(HOLD_ALL, keys,
+                userId, String.valueOf(HOLD_TTL_MINUTES * 60));
+        return result != null && result == 1;
     }
 
     // 좌석 임시 점유 (SETNX - 원자적 연산) -> 명령 하나 단위
@@ -47,8 +44,7 @@ public class SeatRedisProvider {
 
     // 좌석 점유자 조회
     public String getHolder(String showId, Long seatId) {
-        String key = SEAT_HOLD_PREFIX + showId + ":" + seatId;
-        return redisTemplate.opsForValue().get(key);
+        return redisTemplate.opsForValue().get(holdKey(showId, seatId));
     }
 
     // 좌석 점유 해제
@@ -68,6 +64,19 @@ public class SeatRedisProvider {
         return SEAT_HOLD_PREFIX + "{" + showId + "}:" + seatId;
     }
 
+    // GET -> 소유자 비교 -> 일치하면 DEL, 전부 한 번에 (원자적)
+    private static final RedisScript<Long> RELEASE_IF_OWNER = new DefaultRedisScript<>("""
+            local holder = redis.call('GET', KEYS[1])
+            if holder == false then
+                return -1
+            elseif holder == ARGV[1] then
+                redis.call('DEL', KEYS[1])
+                return 1
+            else
+                return 0
+            end
+            """, Long.class); // 반환 값 1(삭제), 0 (미소유), -1 (미점유)
+
     private static final RedisScript<Long> HOLD_ALL = new DefaultRedisScript<>("""
         for i = 1, #KEYS do
             if redis.call('EXISTS', KEYS[i]) == 1 then
@@ -79,14 +88,4 @@ public class SeatRedisProvider {
         end
         return 1
         """, Long.class);
-
-    // 여러 좌석을 한 덩어리로 점유 (전부 아니면 전무)
-    public boolean holdAll(String showId, List<Long> seatIds, String userId) {
-        List<String> keys = seatIds.stream()
-                .map(id -> holdKey(showId, id))
-                .toList();
-        Long result = redisTemplate.execute(HOLD_ALL, keys,
-                userId, String.valueOf(HOLD_TTL_MINUTES * 60));   // TTL 초 단위
-        return result != null && result == 1;
-    }
 }
