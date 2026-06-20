@@ -6,11 +6,13 @@ import com.seatflow.common.event.seat.SeatHeldEvent;
 import com.seatflow.common.exception.BusinessException;
 import com.seatflow.seat.domain.Seat;
 import com.seatflow.seat.domain.SeatStatus;
+import com.seatflow.seat.event.SeatStatusChangedEvent;
 import com.seatflow.seat.exception.SeatErrorCode;
 import com.seatflow.seat.redis.SeatRedisProvider;
 import com.seatflow.seat.repository.SeatRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +27,7 @@ public class SeatService {
     private final SeatRepository seatRepository;
     private final SeatRedisProvider seatRedisProvider;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public List<Seat> getSeats(String showId) {
@@ -47,6 +50,8 @@ public class SeatService {
         }
 
         log.info("Seat released: showId={}, seatId={}, userId={}", showId, seatId, userId);
+
+        eventPublisher.publishEvent(new SeatStatusChangedEvent(showId, seatId, "AVAILABLE"));
     }
 
     @Transactional
@@ -92,5 +97,9 @@ public class SeatService {
         }
 
         log.info("Seats held: showId={}, seatIds={}, userId={}", showId, seatIds, userId);
+
+        // 점유 성공 사실 발행 (SSE는 이 사실을 구독해서 알아서 전송)
+        seatIds.forEach(id ->
+                eventPublisher.publishEvent(new SeatStatusChangedEvent(showId, id, "HELD")));
     }
 }
