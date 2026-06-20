@@ -4,9 +4,12 @@ import com.seatflow.common.response.ApiResponse;
 import com.seatflow.seat.dto.HoldSeatsRequest;
 import com.seatflow.seat.dto.SeatResponse;
 import com.seatflow.seat.service.SeatService;
+import com.seatflow.seat.sse.SeatEmitterStore;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
@@ -16,6 +19,8 @@ import java.util.List;
 public class SeatController {
 
     private final SeatService seatService;
+    private final SeatEmitterStore seatEmitterStore;
+
 
     @GetMapping("/{showId}")
     public ResponseEntity<ApiResponse<List<SeatResponse>>> getSeats(@PathVariable String showId) {
@@ -42,5 +47,10 @@ public class SeatController {
             @RequestHeader("X-User-Id") String userId) {
         seatService.releaseSeat(showId, seatId, userId);
         return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @GetMapping(value = "/{showId}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamSeats(@PathVariable String showId) {
+        return seatEmitterStore.create(showId);
     }
 }
