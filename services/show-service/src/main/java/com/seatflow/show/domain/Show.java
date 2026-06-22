@@ -5,13 +5,13 @@ import lombok.Getter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Document(collection = "shows")
 @Getter
 public class Show {
-    // 기본적으로 리플렉션으로 객체 생성, final 있으면 기본 생성샂로 인스턴스 만든 뒤 필드 값에 주입하는 방식이 안되기 때문에 역직렬화에 문제 가능성
+
     @Id
     private String id;
 
@@ -21,20 +21,24 @@ public class Show {
 
     private LocalDateTime showDate;
 
-    private int totalSeats;
-
-    private BigDecimal price;
+    // 등급별 정원·가격 구성 (문서 안에 중첩). 단일 totalSeats/price를 대체.
+    private List<SeatGrade> seatGrades;
 
     private LocalDateTime createdAt;
 
     @Builder
-    private Show(String id, String title, String venue, LocalDateTime showDate, int totalSeats, BigDecimal price, LocalDateTime createdAt) {
+    private Show(String id, String title, String venue, LocalDateTime showDate,
+                 List<SeatGrade> seatGrades, LocalDateTime createdAt) {
         this.id = id;
         this.title = title;
         this.venue = venue;
         this.showDate = showDate;
-        this.totalSeats = totalSeats;
-        this.price = price;
+        this.seatGrades = seatGrades;
         this.createdAt = createdAt;
+    }
+
+    /** 전체 좌석 수가 필요하면 등급 정원 합으로 유도 (별도 필드로 중복 저장하지 않음) */
+    public int totalSeats() {
+        return seatGrades.stream().mapToInt(SeatGrade::getCapacity).sum();
     }
 }
