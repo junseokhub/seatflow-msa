@@ -13,6 +13,13 @@ public interface UserRepository extends JpaRepository<User, String> {
     Optional<User> findByEmail(String email);
     boolean existsByEmail(String email);
 
+
+    /**
+     * INSERT IGNORE 멱등 생성.
+     * 현재 활성 방식은 REQUIRES_NEW + save라 직접 쓰이지 않지만,
+     * INSERT IGNORE 방식으로 되돌릴 때를 위해 남겨둔다.
+     * id(PK)/email(unique) 충돌 시 예외 없이 0 반환. @PrePersist 우회하므로 값 직접 설정.
+     */
     @Modifying
     @Query(value = """
         INSERT IGNORE INTO users (id, email, name, status, created_at, updated_at)
