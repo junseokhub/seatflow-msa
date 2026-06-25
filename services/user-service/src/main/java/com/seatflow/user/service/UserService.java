@@ -16,13 +16,6 @@ public class UserService {
 
     @Transactional
     public User createUser(String userId, String email, String name) {
-        if (userRepository.existsByEmail(email)) {
-            throw new BusinessException(
-                    UserErrorCode.EMAIL_ALREADY_EXISTS.getStatus().value(),
-                    UserErrorCode.EMAIL_ALREADY_EXISTS.getMessage()
-            );
-        }
-
         User user = User.builder()
                 .id(userId)
                 .email(email)
