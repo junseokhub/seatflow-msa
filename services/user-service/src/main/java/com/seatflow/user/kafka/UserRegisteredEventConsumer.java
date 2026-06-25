@@ -8,6 +8,7 @@ import com.seatflow.common.event.user.UserRegisteredEvent;
 import com.seatflow.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
@@ -19,7 +20,7 @@ public class UserRegisteredEventConsumer {
     private static final String GROUP = "user-service";
 
     private final UserService userService;
-    private final IdempotentEventProcessor idempotentProcessor;
+    //    private final IdempotentEventProcessor idempotentProcessor;
     private final ObjectMapper kafkaObjectMapper;
 
     @KafkaListener(topics = EventTopic.USER_REGISTERED, groupId = GROUP)
@@ -27,15 +28,20 @@ public class UserRegisteredEventConsumer {
         EventEnvelope<UserRegisteredEvent> event;
         try {
             event = kafkaObjectMapper.readValue(
-                    message, new TypeReference<EventEnvelope<UserRegisteredEvent>>() {});
+                    message, new TypeReference<EventEnvelope<UserRegisteredEvent>>() {
+                    });
         } catch (Exception e) {
-            // 역직렬화 불가 = 재시도해도 영원히 실패하는 poison → 일단 스킵 (추후 DLQ)
             log.error("Malformed event skipped: {}", e.getMessage(), e);
-            return;
+            return;   // 깨진 메시지(poison) → 스킵
         }
 
         UserRegisteredEvent payload = event.payload();
-        idempotentProcessor.process(GROUP, event.eventId(), event.eventType(),
-                () -> userService.createUser(payload.userId(), payload.email(), payload.name()));
+        try {
+            userService.createUser(payload.userId(), payload.email(), payload.name());
+        } catch (DataIntegrityViolationException e) {
+            // PK(userId) 또는 email unique 충돌 = 이미 처리된 중복 이벤트 → 무시
+            // (at-least-once로 같은 이벤트가 또 와도 DB 제약이 원자적으로 막아줌)
+            log.info("Duplicate event skipped (already processed): eventId={}", event.eventId());
+        }
     }
 }
