@@ -1,5 +1,7 @@
-package com.seatflow.common.outbox;
+package com.seatflow.auth.repository;
 
+import com.seatflow.auth.domain.Outbox;
+import com.seatflow.common.outbox.OutboxStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

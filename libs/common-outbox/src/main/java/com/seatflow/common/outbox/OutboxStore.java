@@ -1,75 +1,29 @@
 package com.seatflow.common.outbox;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
-@Slf4j
-@Service
-@RequiredArgsConstructor
-public class OutboxStore {
+/**
+ * Outbox 저장소 동작 계약(포트). 구현(어댑터)은 각 서비스가 자기 DB로 제공한다.
+ *   - JPA  : SELECT ... FOR UPDATE SKIP LOCKED 기반
+ *   - Mongo: findAndModify 기반
+ * 공통 스케줄러(OutboxScheduler)는 이 인터페이스에만 의존하므로 특정 DB를 모른다.
+ * common-outbox 모듈에는 JPA/Mongo 의존성이 전혀 들어가지 않는다.
+ */
+public interface OutboxStore {
 
-    private static final int MAX_RETRY = 10;                       // 캡 백오프 기준 ≈ 13분 버팀
-    private static final Duration BACKOFF_BASE = Duration.ofSeconds(1);
-    private static final Duration BACKOFF_CAP = Duration.ofMinutes(5);
+    /**
+     * PENDING을 limit개까지 원자적으로 집어 PUBLISHING으로 전이시켜 반환.
+     * 반환 원소 타입은 구현의 구체 엔티티(OutboxMessage의 하위)이며, 호출 측(스케줄러)은
+     * OutboxMessage로만 다룬다. 와일드카드로 두어 구현이 List<Outbox> 등 자기 타입을
+     * 변환 복사 없이 그대로 반환할 수 있게 한다.
+     */
+    List<? extends OutboxMessage> claimPending(int limit);
 
-    private final OutboxRepository outboxRepository;
+    void markPublished(String id);
 
-    @Transactional
-    public List<Outbox> claimPending(int limit) {
-        List<Outbox> pending = outboxRepository.findPendingForUpdate(LocalDateTime.now(), limit);
-        pending.forEach(Outbox::markPublishing);
-        return pending;
-    }
+    void markFailedOrRetry(String id);
 
-    @Transactional
-    public void markPublished(Long id) {
-        outboxRepository.findById(id).ifPresent(Outbox::markPublished);
-    }
+    void recoverStuck(int minutes);
 
-    @Transactional
-    public void markFailedOrRetry(Long id) {
-        outboxRepository.findById(id).ifPresent(outbox -> {
-            if (outbox.isExceededRetry(MAX_RETRY)) {
-                outbox.markFailed();
-                log.warn("Outbox moved to FAILED (manual redrive required): eventId={}, eventType={}, retryCount={}",
-                        outbox.getEventId(), outbox.getEventType(), outbox.getRetryCount());
-            } else {
-                outbox.markRetry(nextRetryAt(outbox.getRetryCount() + 1));
-            }
-        });
-    }
-
-    @Transactional
-    public void recoverStuck(int minutes) {
-        LocalDateTime threshold = LocalDateTime.now().minusMinutes(minutes);
-        outboxRepository.findStuckPublishing(threshold)
-                .forEach(Outbox::markPendingNow);
-    }
-
-    /** FAILED 행을 PENDING으로 재투입. 운영자/관리 트리거에서 호출(자동 스케줄 X — poison 무한루프 방지) */
-    @Transactional
-    public int redriveFailed(int limit) {
-        List<Outbox> failed = outboxRepository.findFailedForUpdate(limit);
-        failed.forEach(Outbox::markRedrive);
-        if (!failed.isEmpty()) {
-            log.info("Outbox redrive: {} FAILED rows requeued", failed.size());
-        }
-        return failed.size();
-    }
-
-    /** AWS equal jitter: delay/2 + rand(0, delay/2) */
-    private LocalDateTime nextRetryAt(int retryCount) {
-        long expMs = (long) (BACKOFF_BASE.toMillis() * Math.pow(2, retryCount - 1));
-        long delayMs = Math.min(expMs, BACKOFF_CAP.toMillis());
-        long half = delayMs / 2;
-        long jittered = half + ThreadLocalRandom.current().nextLong(half + 1);
-        return LocalDateTime.now().plus(Duration.ofMillis(jittered));
-    }
+    long redriveFailed(int limit);
 }

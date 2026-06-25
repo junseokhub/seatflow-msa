@@ -2,16 +2,16 @@ package com.seatflow.auth.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.seatflow.auth.domain.Credentials;
+import com.seatflow.auth.domain.Outbox;
 import com.seatflow.auth.exception.AuthErrorCode;
 import com.seatflow.auth.jwt.JwtProvider;
 import com.seatflow.auth.redis.RedisProvider;
 import com.seatflow.auth.repository.CredentialsRepository;
+import com.seatflow.auth.repository.OutboxRepository;
 import com.seatflow.common.event.EventEnvelope;
 import com.seatflow.common.event.EventTopic;
 import com.seatflow.common.event.user.UserRegisteredEvent;
 import com.seatflow.common.exception.BusinessException;
-import com.seatflow.common.outbox.Outbox;
-import com.seatflow.common.outbox.OutboxRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;

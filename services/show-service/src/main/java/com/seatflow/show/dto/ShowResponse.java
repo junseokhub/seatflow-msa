@@ -1,17 +1,17 @@
 package com.seatflow.show.dto;
 
+import com.seatflow.show.domain.SeatGrade;
 import com.seatflow.show.domain.Show;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record ShowResponse(
         String id,
         String title,
         String venue,
         LocalDateTime showDate,
-        int totalSeats,
-        BigDecimal price,
+        List<SeatGrade> seatGrades,
         LocalDateTime createdAt
 ) {
     public static ShowResponse from(Show show) {
@@ -20,8 +20,7 @@ public record ShowResponse(
                 show.getTitle(),
                 show.getVenue(),
                 show.getShowDate(),
-                show.getTotalSeats(),
-                show.getPrice(),
+                show.getSeatGrades(),
                 show.getCreatedAt()
         );
     }

@@ -1,24 +1,23 @@
 package com.seatflow.show.service.command;
 
+import com.seatflow.show.domain.SeatGrade;
 import com.seatflow.show.dto.ShowRequest;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record CreateShowCommand(
         String title,
         String venue,
         LocalDateTime showDate,
-        int totalSeats,
-        BigDecimal price
+        List<SeatGrade> seatGrades
 ) {
     public static CreateShowCommand from(ShowRequest request) {
         return new CreateShowCommand(
                 request.title(),
                 request.venue(),
                 request.showDate(),
-                request.totalSeats(),
-                request.price()
+                request.seatGrades()
         );
     }
 }

@@ -5,6 +5,6 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Import;
 
 @AutoConfiguration(after = CommonKafkaAutoConfiguration.class)
-@Import({OutboxStore.class, OutboxPublisher.class})
+@Import({OutboxScheduler.class})
 public class CommonOutboxAutoConfiguration {
 }
