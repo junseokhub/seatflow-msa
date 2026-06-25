@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -15,14 +17,8 @@ public class UserService {
     private final UserRepository userRepository;
 
     @Transactional
-    public User createUser(String userId, String email, String name) {
-        User user = User.builder()
-                .id(userId)
-                .email(email)
-                .name(name)
-                .build();
-
-        return userRepository.save(user);
+    public void createUser(String userId, String email, String name) {
+        userRepository.insertIgnore(userId, email, name, LocalDateTime.now());
     }
 
     @Transactional(readOnly = true)

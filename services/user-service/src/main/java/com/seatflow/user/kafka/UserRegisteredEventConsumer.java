@@ -8,7 +8,6 @@ import com.seatflow.common.event.user.UserRegisteredEvent;
 import com.seatflow.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
@@ -35,13 +34,18 @@ public class UserRegisteredEventConsumer {
             return;   // 깨진 메시지(poison) → 스킵
         }
 
+        // 멱등 처리는 UserService.createUser(INSERT IGNORE)가 담당.
+        // 중복 이벤트는 예외 없이 무시되므로 별도 try-catch가 필요 없다.
         UserRegisteredEvent payload = event.payload();
-        try {
-            userService.createUser(payload.userId(), payload.email(), payload.name());
-        } catch (DataIntegrityViolationException e) {
-            // PK(userId) 또는 email unique 충돌 = 이미 처리된 중복 이벤트 → 무시
-            // (at-least-once로 같은 이벤트가 또 와도 DB 제약이 원자적으로 막아줌)
-            log.info("Duplicate event skipped (already processed): eventId={}", event.eventId());
-        }
+        userService.createUser(payload.userId(), payload.email(), payload.name());
+
+
+//        try {
+//            userService.createUser(payload.userId(), payload.email(), payload.name());
+//        } catch (DataIntegrityViolationException e) {
+//            // PK(userId) 또는 email unique 충돌 = 이미 처리된 중복 이벤트 → 무시
+//            // (at-least-once로 같은 이벤트가 또 와도 DB 제약이 원자적으로 막아줌)
+//            log.info("Duplicate event skipped (already processed): eventId={}", event.eventId());
+//        }
     }
 }
