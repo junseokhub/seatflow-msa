@@ -34,12 +34,17 @@ public class UserRegisteredEventConsumer {
             return;   // 깨진 메시지(poison) → 스킵
         }
 
-        // 멱등 처리는 UserService.createUser(INSERT IGNORE)가 담당.
-        // 중복 이벤트는 예외 없이 무시되므로 별도 try-catch가 필요 없다.
+        // 멱등 처리는 createUser(REQUIRES_NEW + 충돌 무시)가 담당. 컨슈머는 위임만 한다.
         UserRegisteredEvent payload = event.payload();
         userService.createUser(payload.userId(), payload.email(), payload.name());
 
+// IGNORE
+//        // 멱등 처리는 UserService.createUser(INSERT IGNORE)가 담당.
+//        // 중복 이벤트는 예외 없이 무시되므로 별도 try-catch가 필요 없다.
+//        UserRegisteredEvent payload = event.payload();
+//        userService.createUser(payload.userId(), payload.email(), payload.name());
 
+// save + catch
 //        try {
 //            userService.createUser(payload.userId(), payload.email(), payload.name());
 //        } catch (DataIntegrityViolationException e) {
