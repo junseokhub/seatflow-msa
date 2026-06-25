@@ -34,8 +34,7 @@ public class ShowService {
                 .title(command.title())
                 .venue(command.venue())
                 .showDate(command.showDate())
-                .totalSeats(command.totalSeats())
-                .price(command.price())
+                .seatGrades(command.seatGrades())
                 .createdAt(LocalDateTime.now())
                 .build();
 

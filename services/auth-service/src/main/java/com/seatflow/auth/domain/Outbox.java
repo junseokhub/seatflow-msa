@@ -1,5 +1,7 @@
-package com.seatflow.common.outbox;
+package com.seatflow.auth.domain;
 
+import com.seatflow.common.outbox.OutboxMessage;
+import com.seatflow.common.outbox.OutboxStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -8,14 +10,20 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * JPA 구현의 Outbox 엔티티(어댑터). common-outbox에서 auth-service로 이동.
+ * OutboxMessage를 구현해 공통 스케줄러가 이 엔티티를 인터페이스로만 다루게 한다.
+ * PK는 Long이지만 getId()는 String으로 노출(인터페이스 계약).
+ */
 @Entity
 @Table(name = "outbox")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public class Outbox {
+public class Outbox implements OutboxMessage {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Getter(AccessLevel.NONE)   // lombok이 getId():Long 만들지 않게 — OutboxMessage.getId():String과 충돌 방지
     private Long id;
 
     @Column(nullable = false, unique = true, updatable = false)
@@ -53,7 +61,7 @@ public class Outbox {
     void prePersist() {
         LocalDateTime now = LocalDateTime.now();
         this.createdAt = now;
-        this.nextRetryAt = now;        // 생성 즉시 발행 대상
+        this.nextRetryAt = now;
         this.status = OutboxStatus.PENDING;
         this.retryCount = 0;
     }
@@ -64,25 +72,22 @@ public class Outbox {
     }
 
     public void markPublished() {
-        if (this.status != OutboxStatus.PUBLISHING) return; // 상태 전이 가드
+        if (this.status != OutboxStatus.PUBLISHING) return;
         this.status = OutboxStatus.PUBLISHED;
         this.publishedAt = LocalDateTime.now();
     }
 
-    /** 발행 실패 → 백오프된 시각에 재시도 */
     public void markRetry(LocalDateTime nextRetryAt) {
         this.status = OutboxStatus.PENDING;
         this.retryCount++;
         this.nextRetryAt = nextRetryAt;
     }
 
-    /** PUBLISHING 스턱 복구 → 즉시 재시도 대상으로 */
     public void markPendingNow() {
         this.status = OutboxStatus.PENDING;
         this.nextRetryAt = LocalDateTime.now();
     }
 
-    /** FAILED 격리 → 운영자가 수동 재투입(redrive) */
     public void markRedrive() {
         this.status = OutboxStatus.PENDING;
         this.retryCount = 0;
@@ -103,5 +108,13 @@ public class Outbox {
         this.eventType = eventType;
         this.messageKey = messageKey;
         this.payload = payload;
+    }
+
+    // === OutboxMessage 구현 ===
+    // getEventId/getEventType/getMessageKey/getPayload는 @Getter가 생성 → 그대로 충족
+    // getId만 Long → String 변환 필요
+    @Override
+    public String getId() {
+        return String.valueOf(this.id);
     }
 }
