@@ -9,7 +9,14 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "seats")
+@Table(
+        name = "seats",
+        // 멱등성: 같은 공연의 같은 (등급=section, 번호) 좌석은 하나뿐.
+        // show.created가 중복 도착해도 INSERT 충돌로 중복 생성이 막힌다.
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_seat_show_section_number",
+                columnNames = {"show_id", "section", "number"})
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class Seat {
@@ -18,11 +25,11 @@ public class Seat {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "show_id", nullable = false)
     private String showId;
 
     @Column(nullable = false)
-    private String section;
+    private String section;     // 등급(VIP/R/S)을 section으로 매핑
 
     @Column(nullable = false)
     private String seatRow;

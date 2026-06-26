@@ -5,12 +5,14 @@ import com.seatflow.user.domain.User;
 import com.seatflow.user.exception.UserErrorCode;
 import com.seatflow.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserService {
 
     private final UserRepository userRepository;
@@ -49,8 +51,9 @@ public class UserService {
                     .email(email)
                     .name(name)
                     .build();
-            userRepository.save(user);   // 라이프사이클(@PrePersist 등) 정상 동작
+            userRepository.saveAndFlush(user);   // 라이프사이클(@PrePersist 등) 정상 동작
         } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            log.info("중복된 가입 요청 감지 - 멱등성 통과 처리: userId={}, email={}", userId, email);
             // PK(id)/email unique 충돌 = 이미 처리된 중복 이벤트.
             // REQUIRES_NEW라 이 트랜잭션만 롤백되고 호출자(컨슈머) 트랜잭션은 안전.
             // 중복은 정상 흐름이므로 조용히 무시한다.
