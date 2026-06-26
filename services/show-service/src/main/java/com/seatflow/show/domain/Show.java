@@ -39,6 +39,6 @@ public class Show {
 
     /** 전체 좌석 수가 필요하면 등급 정원 합으로 유도 (별도 필드로 중복 저장하지 않음) */
     public int totalSeats() {
-        return seatGrades.stream().mapToInt(SeatGrade::getCapacity).sum();
+        return seatGrades.stream().mapToInt(SeatGrade::capacity).sum();
     }
 }
