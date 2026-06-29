@@ -6,10 +6,13 @@ import com.seatflow.common.outbox.OutboxBackoff;
 import com.seatflow.common.outbox.OutboxMessage;
 import com.seatflow.common.outbox.OutboxStore;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /**
@@ -20,6 +23,7 @@ import java.util.List;
  */
 @Service
 @RequiredArgsConstructor
+@ConditionalOnClass(name = "jarkarta.persistence.EntityManager")
 public class JpaOutboxStore implements OutboxStore {
 
     private final OutboxRepository outboxRepository;
@@ -30,6 +34,13 @@ public class JpaOutboxStore implements OutboxStore {
         List<Outbox> pending = outboxRepository.findPendingForUpdate(LocalDateTime.now(), limit);
         pending.forEach(Outbox::markPublishing);   // 더티체킹으로 PUBLISHING 반영
         return pending;   // List<Outbox> 그대로 반환 (복사 없음). 반환 타입이 와일드카드라 OK
+    }
+
+    @Override
+    @Transactional
+    public int deletePublishedBefore(int retentionHours, int limit) {
+        Instant threshold = Instant.now().minus(retentionHours, ChronoUnit.HOURS);
+        return outboxRepository.deletePublishedBefore(threshold, limit);
     }
 
     @Override

@@ -26,4 +26,11 @@ public interface OutboxStore {
     void recoverStuck(int minutes);
 
     long redriveFailed(int limit);
+
+    /**
+     * PUBLISHED 후 retentionHours가 지난 행을 최대 limit건 삭제하고, 삭제된 행 수를 반환한다.
+     * 스케줄러가 반환값으로 "더 지울 게 있는지"를 판단해 배치로 반복 호출한다.
+     * FAILED 행은 보존(정리 대상 제외).
+     */
+    int deletePublishedBefore(int retentionHours, int limit);
 }

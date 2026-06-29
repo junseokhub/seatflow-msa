@@ -3,9 +3,11 @@ package com.seatflow.auth.repository;
 import com.seatflow.auth.domain.Outbox;
 import com.seatflow.common.outbox.OutboxStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -39,4 +41,14 @@ public interface OutboxRepository extends JpaRepository<Outbox, Long> {
     List<Outbox> findFailedForUpdate(@Param("limit") int limit);
 
     long countByStatus(OutboxStatus status);
+
+    @Modifying
+    @Query(value = """
+            DELETE FROM outbox
+            WHERE status = 'PUBLISHED'
+              AND published_at < :threshold
+            LIMIT :limit
+            """, nativeQuery = true)
+    int deletePublishedBefore(@Param("threshold") Instant threshold,
+                              @Param("limit") int limit);
 }
