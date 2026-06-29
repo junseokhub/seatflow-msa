@@ -23,7 +23,7 @@ import java.util.List;
  */
 @Service
 @RequiredArgsConstructor
-@ConditionalOnClass(name = "jarkarta.persistence.EntityManager")
+@ConditionalOnClass(name = "jakarta.persistence.EntityManager")
 public class JpaOutboxStore implements OutboxStore {
 
     private final OutboxRepository outboxRepository;
