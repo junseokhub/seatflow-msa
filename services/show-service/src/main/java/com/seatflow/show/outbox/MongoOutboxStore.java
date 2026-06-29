@@ -1,11 +1,13 @@
 package com.seatflow.show.outbox;
 
+import com.mongodb.client.result.DeleteResult;
 import com.seatflow.common.outbox.OutboxBackoff;
 import com.seatflow.common.outbox.OutboxMessage;
 import com.seatflow.common.outbox.OutboxStatus;
 import com.seatflow.common.outbox.OutboxStore;
 import com.seatflow.show.domain.Outbox;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -14,7 +16,9 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,6 +29,7 @@ import java.util.List;
  */
 @Service
 @RequiredArgsConstructor
+@ConditionalOnClass(name = "org.springframework.data.mongodb.core.MongoTemplate")
 public class MongoOutboxStore implements OutboxStore {
 
     private final MongoTemplate mongoTemplate;
@@ -53,6 +58,29 @@ public class MongoOutboxStore implements OutboxStore {
             claimed.add(doc);
         }
         return claimed;
+    }
+
+    @Override
+    public int deletePublishedBefore(int retentionHours, int limit) {
+        Instant threshold = Instant.now().minus(retentionHours, ChronoUnit.HOURS);
+
+        // 1) 지울 대상 _id 만 limit개 선별 (인덱스: status + publishedAt)
+        Query selectQuery = new Query(
+                Criteria.where("status").is("PUBLISHED")
+                        .and("publishedAt").lt(threshold))
+                .limit(limit);
+        selectQuery.fields().include("_id");
+
+        List<Outbox> targets = mongoTemplate.find(selectQuery, Outbox.class);
+        if (targets.isEmpty()) {
+            return 0;
+        }
+
+        // 2) 선별한 _id 들만 삭제
+        List<String> ids = targets.stream().map(Outbox::getId).toList();
+        DeleteResult result = mongoTemplate.remove(
+                new Query(Criteria.where("_id").in(ids)), Outbox.class);
+        return (int) result.getDeletedCount();
     }
 
     @Override
