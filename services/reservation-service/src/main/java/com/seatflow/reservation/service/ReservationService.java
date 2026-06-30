@@ -2,6 +2,7 @@ package com.seatflow.reservation.service;
 
 import com.seatflow.common.exception.BusinessException;
 import com.seatflow.reservation.domain.Reservation;
+import com.seatflow.reservation.domain.ReservationStatus;
 import com.seatflow.reservation.exception.ReservationErrorCode;
 import com.seatflow.reservation.repository.ReservationRepository;
 import com.seatflow.reservation.service.command.CreateReservationCommand;
@@ -30,6 +31,22 @@ public class ReservationService {
         return reservationRepository.save(reservation);
     }
 
+    /**
+     * 결제 완료로 예매를 확정한다(payment.completed 컨슈머가 호출).
+     * 존재하지 않는 예매면 로깅 후 무시한다(이벤트 순서/지연으로 아직 없을 수 있음).
+     * 상태 전이 멱등성은 Reservation.confirm()이 보장한다.
+     */
+    @Transactional
+    public void confirmReservation(Long reservationId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElse(null);
+        if (reservation == null) {
+            log.warn("Reservation not found for confirm, skip: reservationId={}", reservationId);
+            return;
+        }
+        reservation.confirm();   // PENDING → CONFIRMED (이미 CONFIRMED면 멱등 무시)
+    }
+
     @Transactional(readOnly = true)
     public Reservation getReservation(Long id) {
         return reservationRepository.findById(id)
@@ -48,7 +65,7 @@ public class ReservationService {
     public void cancelReservation(Long id) {
         Reservation reservation = getReservation(id);
 
-        if (reservation.getStatus() == com.seatflow.reservation.domain.ReservationStatus.CANCELLED) {
+        if (reservation.getStatus() == ReservationStatus.CANCELLED) {
             throw new BusinessException(
                     ReservationErrorCode.RESERVATION_ALREADY_CANCELLED.getStatus().value(),
                     ReservationErrorCode.RESERVATION_ALREADY_CANCELLED.getMessage()
