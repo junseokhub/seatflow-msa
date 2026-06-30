@@ -61,6 +61,22 @@ public class Reservation {
         this.reservationNumber = UUID.randomUUID().toString();
     }
 
+    /**
+     * 결제 완료(payment.completed)로 예매를 확정한다.
+     * 상태 전이는 PENDING → CONFIRMED만 허용한다. 이미 확정이면 멱등하게 무시하고,
+     * 취소된 예매는 확정할 수 없다(잘못된 전이 방어).
+     */
+    public void confirm() {
+        if (this.status == ReservationStatus.CONFIRMED) {
+            return;   // 이미 확정 (중복 payment.completed) → 멱등 무시
+        }
+        if (this.status == ReservationStatus.CANCELLED) {
+            throw new IllegalStateException(
+                    "취소된 예매는 확정할 수 없다: reservationNumber=" + reservationNumber);
+        }
+        this.status = ReservationStatus.CONFIRMED;
+    }
+
     public void cancel() {
         this.status = ReservationStatus.CANCELLED;
     }
