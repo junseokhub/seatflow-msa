@@ -26,6 +26,7 @@ public class ReservationService {
                 .userId(command.userId())
                 .showId(command.showId())
                 .seatId(command.seatId())
+                .amount(command.amount())
                 .build();
 
         return reservationRepository.save(reservation);
