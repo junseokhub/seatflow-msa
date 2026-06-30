@@ -8,6 +8,7 @@ import com.seatflow.common.event.payment.PaymentFailedEvent;
 import com.seatflow.common.exception.BusinessException;
 import com.seatflow.payment.domain.Outbox;
 import com.seatflow.payment.domain.Payment;
+import com.seatflow.payment.domain.PaymentStatus;
 import com.seatflow.payment.exception.PaymentErrorCode;
 import com.seatflow.payment.repository.OutboxRepository;
 import com.seatflow.payment.repository.PaymentRepository;
@@ -15,6 +16,7 @@ import com.seatflow.payment.service.command.ProcessPaymentCommand;
 import com.seatflow.payment.strategy.PaymentStrategyRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,13 +33,28 @@ public class DefaultPaymentService implements PaymentService {
     private final PaymentStrategyRegistry strategyRegistry;
 
     /**
-     * 결제를 처리하고 결과 이벤트(payment.completed / payment.failed)를 Outbox에 적재한다.
-     * 결제 저장과 이벤트 적재가 한 트랜잭션이라, 결제만 되고 이벤트가 유실되는 dual-write를
-     * 방지한다. 실제 Kafka 발행은 공통 OutboxScheduler가 폴링으로 수행한다.
+     * 결제 처리.
+     *
+     * 비즈니스 멱등성(이미 성공한 예매의 중복 결제 차단)은 2단계로 막는다.
+     *  1) 사전 확인: 이미 COMPLETED 결제가 있으면 곧바로 예외(불필요한 결제 시도 방지).
+     *  2) 최종 방어: COMPLETED 저장 시 payments의 부분 unique 제약(completed_reservation_id)이
+     *     동시 요청을 원자적으로 막는다. 사전 확인과 저장 사이의 틈(check-then-act)은
+     *     이 제약이 닫는다. 충돌은 PAYMENT_ALREADY_COMPLETED로 변환한다.
+     *
+     * 실패(FAILED)는 제약 대상이 아니므로(컬럼 NULL) 다른 수단으로 재시도할 수 있다.
      */
     @Override
     @Transactional
     public Payment processPayment(ProcessPaymentCommand command) {
+        // 1) 사전 확인 — 이미 완료된 결제가 있으면 빠르게 거절
+        paymentRepository
+                .findByReservationIdAndStatus(command.reservationId(), PaymentStatus.COMPLETED)
+                .ifPresent(p -> {
+                    throw new BusinessException(
+                            PaymentErrorCode.PAYMENT_ALREADY_COMPLETED.getStatus().value(),
+                            PaymentErrorCode.PAYMENT_ALREADY_COMPLETED.getMessage());
+                });
+
         Payment payment = Payment.builder()
                 .reservationId(command.reservationId())
                 .userId(command.userId())
@@ -52,6 +69,14 @@ public class DefaultPaymentService implements PaymentService {
 
         if (success) {
             payment.complete();
+            // 2) 최종 방어 — COMPLETED 전이 시 부분 unique 충돌이면 동시 중복 결제
+            try {
+                paymentRepository.flush();   // unique 제약을 지금 강제로 확인(커밋까지 미루지 않음)
+            } catch (DataIntegrityViolationException e) {
+                throw new BusinessException(
+                        PaymentErrorCode.PAYMENT_ALREADY_COMPLETED.getStatus().value(),
+                        PaymentErrorCode.PAYMENT_ALREADY_COMPLETED.getMessage());
+            }
             appendOutbox(EventTopic.PAYMENT_COMPLETED, command.userId(),
                     new PaymentCompletedEvent(
                             command.reservationId(), command.userId(), command.amount()));
@@ -67,7 +92,6 @@ public class DefaultPaymentService implements PaymentService {
         return payment;
     }
 
-    /** 이벤트를 EventEnvelope로 감싸 직렬화한 뒤 Outbox에 적재한다(같은 트랜잭션). */
     private void appendOutbox(String eventType, String messageKey, Object event) {
         EventEnvelope<?> envelope = EventEnvelope.of(eventType, SOURCE, event);
         outboxRepository.save(Outbox.builder()
