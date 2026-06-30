@@ -3,6 +3,7 @@ package com.seatflow.reservation.dto;
 import com.seatflow.reservation.domain.Reservation;
 import com.seatflow.reservation.domain.ReservationStatus;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public record ReservationResponse(
@@ -11,6 +12,7 @@ public record ReservationResponse(
         String userId,
         String showId,
         Long seatId,
+        BigDecimal amount,
         ReservationStatus status,
         LocalDateTime createdAt
 ) {
@@ -21,6 +23,7 @@ public record ReservationResponse(
                 reservation.getUserId(),
                 reservation.getShowId(),
                 reservation.getSeatId(),
+                reservation.getAmount(),
                 reservation.getStatus(),
                 reservation.getCreatedAt()
         );

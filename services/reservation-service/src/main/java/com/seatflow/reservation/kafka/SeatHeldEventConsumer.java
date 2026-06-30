@@ -22,23 +22,22 @@ public class SeatHeldEventConsumer {
 
     @KafkaListener(topics = EventTopic.SEAT_HELD, groupId = "reservation-service")
     public void consume(String message) {
+        SeatHeldEvent payload;
         try {
             EventEnvelope<SeatHeldEvent> event = kafkaObjectMapper.readValue(
-                    message,
-                    new TypeReference<EventEnvelope<SeatHeldEvent>>() {}
-            );
-            log.info("Received SeatHeldEvent: eventId={}, seatId={}",
-                    event.eventId(), event.payload().seatId());
-
-            reservationService.createReservation(
-                    new CreateReservationCommand(
-                            event.payload().userId(),
-                            event.payload().showId(),
-                            event.payload().seatId()
-                    )
-            );
+                    message, new TypeReference<EventEnvelope<SeatHeldEvent>>() {});
+            payload = event.payload();
         } catch (Exception e) {
-            log.error("Failed to process SeatHeldEvent: {}", e.getMessage(), e);
+            log.error("Malformed seat.held skipped: {}", e.getMessage(), e);
+            return;
         }
+
+        reservationService.createReservation(
+                new CreateReservationCommand(
+                        payload.userId(),
+                        payload.showId(),
+                        payload.seatId(),
+                        payload.price()   // 서버측 가격을 예매 원가로 저장
+                ));
     }
 }

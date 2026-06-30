@@ -6,6 +6,8 @@ import com.seatflow.common.event.EventTopic;
 import com.seatflow.common.event.payment.PaymentCompletedEvent;
 import com.seatflow.common.event.payment.PaymentFailedEvent;
 import com.seatflow.common.exception.BusinessException;
+import com.seatflow.payment.client.ReservationClient;
+import com.seatflow.payment.client.ReservationView;
 import com.seatflow.payment.domain.Outbox;
 import com.seatflow.payment.domain.Payment;
 import com.seatflow.payment.domain.PaymentStatus;
@@ -20,33 +22,54 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class DefaultPaymentService implements PaymentService {
 
     private static final String SOURCE = "payment-service";
+    private static final String STATUS_PENDING = "PENDING";
 
     private final PaymentRepository paymentRepository;
     private final OutboxRepository outboxRepository;
     private final ObjectMapper kafkaObjectMapper;
     private final PaymentStrategyRegistry strategyRegistry;
+    private final ReservationClient reservationClient;
 
     /**
      * 결제 처리.
      *
-     * 비즈니스 멱등성(이미 성공한 예매의 중복 결제 차단)은 2단계로 막는다.
-     *  1) 사전 확인: 이미 COMPLETED 결제가 있으면 곧바로 예외(불필요한 결제 시도 방지).
-     *  2) 최종 방어: COMPLETED 저장 시 payments의 부분 unique 제약(completed_reservation_id)이
-     *     동시 요청을 원자적으로 막는다. 사전 확인과 저장 사이의 틈(check-then-act)은
-     *     이 제약이 닫는다. 충돌은 PAYMENT_ALREADY_COMPLETED로 변환한다.
+     * 결제 금액 검증(정석): 결제 직전 reservation을 동기 조회해
+     *   1) 예매가 결제 가능한 상태(PENDING)인지,
+     *   2) 요청 금액이 예매의 실제 금액과 일치하는지
+     * 를 확인한다. 금액의 진실 공급원은 reservation이며, 클라이언트가 보낸 금액은 대조용일 뿐
+     * 신뢰하지 않는다. 실제 결제는 reservation의 금액으로 진행한다.
      *
-     * 실패(FAILED)는 제약 대상이 아니므로(컬럼 NULL) 다른 수단으로 재시도할 수 있다.
+     * 중복 결제 차단(멱등성)은 별도로 둔다.
+     *   - 사전 확인: 이미 COMPLETED 결제가 있으면 거절.
+     *   - 최종 방어: COMPLETED 저장 시 payments 부분 unique 제약이 동시 요청을 원자적으로 차단.
      */
     @Override
     @Transactional
     public Payment processPayment(ProcessPaymentCommand command) {
-        // 1) 사전 확인 — 이미 완료된 결제가 있으면 빠르게 거절
+        // 1) reservation 동기 조회 + 검증
+        ReservationView reservation = fetchReservation(command.reservationId());
+        if (!STATUS_PENDING.equals(reservation.status())) {
+            throw new BusinessException(
+                    PaymentErrorCode.RESERVATION_NOT_PAYABLE.getStatus().value(),
+                    PaymentErrorCode.RESERVATION_NOT_PAYABLE.getMessage());
+        }
+        if (reservation.amount().compareTo(command.amount()) != 0) {
+            throw new BusinessException(
+                    PaymentErrorCode.AMOUNT_MISMATCH.getStatus().value(),
+                    PaymentErrorCode.AMOUNT_MISMATCH.getMessage());
+        }
+        // 실제 결제 금액은 서버측 값(reservation.amount)을 사용한다.
+        BigDecimal payAmount = reservation.amount();
+
+        // 2) 중복 결제 사전 확인
         paymentRepository
                 .findByReservationIdAndStatus(command.reservationId(), PaymentStatus.COMPLETED)
                 .ifPresent(p -> {
@@ -58,38 +81,55 @@ public class DefaultPaymentService implements PaymentService {
         Payment payment = Payment.builder()
                 .reservationId(command.reservationId())
                 .userId(command.userId())
-                .amount(command.amount())
+                .amount(payAmount)
                 .paymentMethod(command.paymentMethod())
                 .build();
         paymentRepository.save(payment);
 
         boolean success = strategyRegistry
                 .get(command.paymentMethod())
-                .process(payment.getPaymentNumber(), command.amount());
+                .process(payment.getPaymentNumber(), payAmount);
 
         if (success) {
             payment.complete();
-            // 2) 최종 방어 — COMPLETED 전이 시 부분 unique 충돌이면 동시 중복 결제
             try {
-                paymentRepository.flush();   // unique 제약을 지금 강제로 확인(커밋까지 미루지 않음)
+                paymentRepository.flush();   // COMPLETED 부분 unique를 커밋 전에 확인
             } catch (DataIntegrityViolationException e) {
                 throw new BusinessException(
                         PaymentErrorCode.PAYMENT_ALREADY_COMPLETED.getStatus().value(),
                         PaymentErrorCode.PAYMENT_ALREADY_COMPLETED.getMessage());
             }
             appendOutbox(EventTopic.PAYMENT_COMPLETED, command.userId(),
-                    new PaymentCompletedEvent(
-                            command.reservationId(), command.userId(), command.amount()));
+                    new PaymentCompletedEvent(command.reservationId(), command.userId(), payAmount));
             log.info("Payment completed: paymentNumber={}", payment.getPaymentNumber());
         } else {
             payment.fail();
             appendOutbox(EventTopic.PAYMENT_FAILED, command.userId(),
-                    new PaymentFailedEvent(
-                            command.reservationId(), command.userId(), command.amount()));
+                    new PaymentFailedEvent(command.reservationId(), command.userId(), payAmount));
             log.info("Payment failed: paymentNumber={}", payment.getPaymentNumber());
         }
 
         return payment;
+    }
+
+    private ReservationView fetchReservation(Long reservationId) {
+        try {
+            ReservationView view = reservationClient.getReservation(reservationId).getData();
+            if (view == null) {
+                throw new BusinessException(
+                        PaymentErrorCode.RESERVATION_NOT_FOUND.getStatus().value(),
+                        PaymentErrorCode.RESERVATION_NOT_FOUND.getMessage());
+            }
+            return view;
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            // reservation 조회 실패(네트워크/장애) — 결제를 진행하지 않는다.
+            log.error("Reservation lookup failed: reservationId={}", reservationId, e);
+            throw new BusinessException(
+                    PaymentErrorCode.RESERVATION_NOT_FOUND.getStatus().value(),
+                    PaymentErrorCode.RESERVATION_NOT_FOUND.getMessage());
+        }
     }
 
     private void appendOutbox(String eventType, String messageKey, Object event) {

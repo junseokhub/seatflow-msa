@@ -17,7 +17,11 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -81,13 +85,16 @@ public class SeatService {
                         SeatErrorCode.SEAT_ALREADY_RESERVED.getMessage());
             }
 
-            // 3. 좌석별 점유 이벤트 발행
+            // 3. 좌석별 점유 이벤트 발행 (가격을 함께 실어 reservation이 서버측 금액을 확보)
+            Map<Long, Seat> seatById = seats.stream()
+                    .collect(Collectors.toMap(Seat::getId, Function.identity()));
             for (Long seatId : seatIds) {
+                BigDecimal price = BigDecimal.valueOf(seatById.get(seatId).getPrice());
                 kafkaTemplate.send(
                         EventTopic.SEAT_HELD,
                         userId,
                         EventEnvelope.of(EventTopic.SEAT_HELD, "seat-service",
-                                new SeatHeldEvent(userId, showId, seatId)));
+                                new SeatHeldEvent(userId, showId, seatId, price)));
             }
 
         } catch (RuntimeException e) {
