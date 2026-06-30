@@ -24,6 +24,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 
+/**
+ * 결제 본체. reservation 금액·상태 검증(2층 일부)과 중복 COMPLETED 차단(부분 unique, 2층)을 담당한다.
+ * 인프라 레벨 멱등성(1층, Redis 키)은 PaymentFacade가 이 메서드를 감싸 처리한다.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -38,23 +42,9 @@ public class DefaultPaymentService implements PaymentService {
     private final PaymentStrategyRegistry strategyRegistry;
     private final ReservationClient reservationClient;
 
-    /**
-     * 결제 처리.
-     *
-     * 결제 금액 검증(정석): 결제 직전 reservation을 동기 조회해
-     *   1) 예매가 결제 가능한 상태(PENDING)인지,
-     *   2) 요청 금액이 예매의 실제 금액과 일치하는지
-     * 를 확인한다. 금액의 진실 공급원은 reservation이며, 클라이언트가 보낸 금액은 대조용일 뿐
-     * 신뢰하지 않는다. 실제 결제는 reservation의 금액으로 진행한다.
-     *
-     * 중복 결제 차단(멱등성)은 별도로 둔다.
-     *   - 사전 확인: 이미 COMPLETED 결제가 있으면 거절.
-     *   - 최종 방어: COMPLETED 저장 시 payments 부분 unique 제약이 동시 요청을 원자적으로 차단.
-     */
     @Override
     @Transactional
-    public Payment processPayment(ProcessPaymentCommand command) {
-        // 1) reservation 동기 조회 + 검증
+    public Payment executePayment(ProcessPaymentCommand command) {
         ReservationView reservation = fetchReservation(command.reservationId());
         if (!STATUS_PENDING.equals(reservation.status())) {
             throw new BusinessException(
@@ -66,10 +56,8 @@ public class DefaultPaymentService implements PaymentService {
                     PaymentErrorCode.AMOUNT_MISMATCH.getStatus().value(),
                     PaymentErrorCode.AMOUNT_MISMATCH.getMessage());
         }
-        // 실제 결제 금액은 서버측 값(reservation.amount)을 사용한다.
         BigDecimal payAmount = reservation.amount();
 
-        // 2) 중복 결제 사전 확인
         paymentRepository
                 .findByReservationIdAndStatus(command.reservationId(), PaymentStatus.COMPLETED)
                 .ifPresent(p -> {
@@ -93,7 +81,7 @@ public class DefaultPaymentService implements PaymentService {
         if (success) {
             payment.complete();
             try {
-                paymentRepository.flush();   // COMPLETED 부분 unique를 커밋 전에 확인
+                paymentRepository.flush();
             } catch (DataIntegrityViolationException e) {
                 throw new BusinessException(
                         PaymentErrorCode.PAYMENT_ALREADY_COMPLETED.getStatus().value(),
@@ -108,7 +96,6 @@ public class DefaultPaymentService implements PaymentService {
                     new PaymentFailedEvent(command.reservationId(), command.userId(), payAmount));
             log.info("Payment failed: paymentNumber={}", payment.getPaymentNumber());
         }
-
         return payment;
     }
 
@@ -124,7 +111,6 @@ public class DefaultPaymentService implements PaymentService {
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            // reservation 조회 실패(네트워크/장애) — 결제를 진행하지 않는다.
             log.error("Reservation lookup failed: reservationId={}", reservationId, e);
             throw new BusinessException(
                     PaymentErrorCode.RESERVATION_NOT_FOUND.getStatus().value(),
