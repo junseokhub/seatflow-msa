@@ -1,34 +1,25 @@
 package com.seatflow.reservation.controller;
 
 import com.seatflow.common.response.ApiResponse;
-import com.seatflow.reservation.dto.ReservationRequest;
 import com.seatflow.reservation.dto.ReservationResponse;
 import com.seatflow.reservation.service.ReservationService;
-import com.seatflow.reservation.service.command.CreateReservationCommand;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 예매 조회/취소 API.
+ * 예매 "생성"은 좌석 점유(seat.held 이벤트)를 통해서만 일어난다. 좌석 가격 등 결제 근거를
+ * 서버가 확정해야 하므로 클라이언트가 REST로 직접 예매를 만들지 않는다.
+ */
 @RestController
 @RequestMapping("/api/reservations")
 @RequiredArgsConstructor
 public class ReservationController {
 
     private final ReservationService reservationService;
-
-    @PostMapping
-    public ResponseEntity<ApiResponse<ReservationResponse>> createReservation(
-            @RequestBody @Valid ReservationRequest request,
-            @RequestHeader("X-User-Id") String userId) {
-        return ResponseEntity.ok(ApiResponse.ok(
-                ReservationResponse.from(reservationService.createReservation(
-                        new CreateReservationCommand(userId, request.showId(), request.seatId())
-                ))
-        ));
-    }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<ReservationResponse>> getReservation(@PathVariable Long id) {
@@ -48,8 +39,7 @@ public class ReservationController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> cancelReservation(
-            @PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> cancelReservation(@PathVariable Long id) {
         reservationService.cancelReservation(id);
         return ResponseEntity.ok(ApiResponse.ok(null));
     }

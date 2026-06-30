@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -27,6 +28,10 @@ public class Reservation {
 
     @Column(nullable = false)
     private Long seatId;
+
+    /** 좌석 원가(서버가 seat.held로 받은 값). 결제 금액의 근거이며 클라이언트 입력을 신뢰하지 않는다. */
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal amount;
 
     @Column(nullable = false, unique = true, updatable = false)
     private String reservationNumber;
@@ -54,21 +59,21 @@ public class Reservation {
     }
 
     @Builder
-    private Reservation(String userId, String showId, Long seatId) {
+    private Reservation(String userId, String showId, Long seatId, BigDecimal amount) {
         this.userId = userId;
         this.showId = showId;
         this.seatId = seatId;
+        this.amount = amount;
         this.reservationNumber = UUID.randomUUID().toString();
     }
 
     /**
-     * 결제 완료(payment.completed)로 예매를 확정한다.
-     * 상태 전이는 PENDING → CONFIRMED만 허용한다. 이미 확정이면 멱등하게 무시하고,
-     * 취소된 예매는 확정할 수 없다(잘못된 전이 방어).
+     * 결제 완료(payment.completed)로 예매를 확정한다(PENDING → CONFIRMED).
+     * 이미 확정이면 멱등하게 무시하고, 취소된 예매는 확정할 수 없다.
      */
     public void confirm() {
         if (this.status == ReservationStatus.CONFIRMED) {
-            return;   // 이미 확정 (중복 payment.completed) → 멱등 무시
+            return;
         }
         if (this.status == ReservationStatus.CANCELLED) {
             throw new IllegalStateException(
