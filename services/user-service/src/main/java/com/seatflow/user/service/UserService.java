@@ -6,8 +6,8 @@ import com.seatflow.user.exception.UserErrorCode;
 import com.seatflow.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -41,9 +41,19 @@ public class UserService {
      *     - save()를 쓰므로 JPA 라이프사이클(cascade·@PrePersist) 그대로 유지.
      *     - "오염 막기"와 "엔티티 로직 유지"를 동시에. 복잡 엔티티에 특히 유리.
      *     - 비용: 매 호출 새 트랜잭션 시작(약간의 오버헤드).
+     * [4] noRollbackFor + catch  ← 추천 (복잡·배치 엔티티)
+     *     - 단일 트랜잭션 내에서 unique 충돌 예외만 rollback 대상에서 제외하여 오염 방지.
+     *     - 장점: save() 계열을 그대로 쓰므로 JPA 라이프사이클 및 영속성 컨텍스트 기능 유지.
+     *     - 비용 효율: [3]번과 달리 새 트랜잭션을 띄우지 않아 커넥션 풀 고갈(데드락) 위험이 없음.
+     *     - 정합성: 메인 비즈니스 로직 실패 시 유저/좌석 저장도 다 함께 안전하게 롤백됨.
+     *      ([3]번의 치명적인 단점인 '부분 커밋으로 인한 데이터 유실'을 완벽히 방어)
+     *     - 대량의 벌크 인서트(seat)나 복잡한 엔티티 정합성이 중요할 때 가장 이상적.
      * ───────────────────────────────────────────────────────────────
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+
+    // REQUIRES_NEW라 이 트랜잭션만 롤백되고 호출자(컨슈머) 트랜잭션은 안전.
+//  [3] @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(noRollbackFor = DataIntegrityViolationException.class)
     public void createUser(String userId, String email, String name) {
         try {
             User user = User.builder()
@@ -53,10 +63,15 @@ public class UserService {
                     .build();
             userRepository.saveAndFlush(user);   // 라이프사이클(@PrePersist 등) 정상 동작
         } catch (org.springframework.dao.DataIntegrityViolationException e) {
-            log.info("중복된 가입 요청 감지 - 멱등성 통과 처리: userId={}, email={}", userId, email);
-            // PK(id)/email unique 충돌 = 이미 처리된 중복 이벤트.
-            // REQUIRES_NEW라 이 트랜잭션만 롤백되고 호출자(컨슈머) 트랜잭션은 안전.
-            // 중복은 정상 흐름이므로 조용히 무시한다.
+            // 내부 원인을 한 번 더 체크해서 '유니크 제약조건 충돌'일 때만 조용히 무시
+            Throwable cause = e.getRootCause();
+            if (cause instanceof java.sql.SQLException && ((java.sql.SQLException) cause).getErrorCode() == 1062) {
+                log.info("중복된 가입 요청 감지 - 멱등성 통과 처리: userId={}, email={}", userId, email);
+                return; // noRollbackFor 덕분에 정상 흐름으로 끝나고 커밋(ACK)됨
+            }
+
+            // 만약 NOT NULL 위반 등 다른 정합성 에러라면 다시 던져서 전체 롤백 유도
+            throw e;
         }
     }
 
