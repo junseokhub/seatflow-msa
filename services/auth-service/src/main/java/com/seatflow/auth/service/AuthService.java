@@ -12,6 +12,7 @@ import com.seatflow.common.event.EventEnvelope;
 import com.seatflow.common.event.EventTopic;
 import com.seatflow.common.event.user.UserRegisteredEvent;
 import com.seatflow.common.exception.BusinessException;
+import com.seatflow.common.security.Role;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -106,7 +107,7 @@ public class AuthService {
 
         redisProvider.resetLoginFail(email);
 
-        String accessToken = jwtProvider.generateAccessToken(credentials.getUserId(), email);
+        String accessToken = jwtProvider.generateAccessToken(credentials.getUserId(), email, credentials.getRole());
         String refreshToken = jwtProvider.generateRefreshToken(credentials.getUserId());
 
         redisProvider.saveRefreshToken(credentials.getUserId(), refreshToken,
@@ -118,7 +119,6 @@ public class AuthService {
     public TokenResult refresh(String refreshToken) {
         var claims = jwtProvider.getClaims(refreshToken);
         String userId = claims.getSubject();
-        String email = (String) claims.get("email");
 
         String stored = redisProvider.getRefreshToken(userId);
         if (stored == null || !stored.equals(refreshToken)) {
@@ -129,7 +129,13 @@ public class AuthService {
             );
         }
 
-        String newAccessToken = jwtProvider.generateAccessToken(userId, email);
+        Credentials credentials = credentialsRepository.findByUserId(userId)
+                .orElseThrow(() -> new BusinessException(
+                        AuthErrorCode.INVALID_TOKEN.getStatus().value(),
+                        AuthErrorCode.INVALID_TOKEN.getMessage()));
+
+        String newAccessToken = jwtProvider.generateAccessToken(
+                userId, credentials.getEmail(), credentials.getRole());
         String newRefreshToken = jwtProvider.generateRefreshToken(userId);
 
         redisProvider.saveRefreshToken(userId, newRefreshToken,
@@ -156,9 +162,9 @@ public class AuthService {
         }
 
         var claims = jwtProvider.getClaims(accessToken);
-        return new ValidateResult(claims.getSubject(), (String) claims.get("email"));
+        return new ValidateResult(claims.getSubject(), (String) claims.get("email"), claims.get("role", Role.class));
     }
 
     public record TokenResult(String accessToken, String refreshToken) {}
-    public record ValidateResult(String userId, String email) {}
+    public record ValidateResult(String userId, String email, Role role) {}
 }

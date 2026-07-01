@@ -1,5 +1,6 @@
 package com.seatflow.auth.domain;
 
+import com.seatflow.common.security.Role;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -27,6 +28,10 @@ public class Credentials {
     @Column(nullable = false)
     private String passwordHash;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -45,10 +50,11 @@ public class Credentials {
     }
 
     @Builder
-    private Credentials(String userId, String email, String passwordHash) {
+    private Credentials(String userId, String email, String passwordHash, Role role) {
         this.id = UUID.randomUUID().toString();
         this.userId = userId;
         this.email = email;
         this.passwordHash = passwordHash;
+        this.role = (role == null) ? Role.USER : role;   // 기본 USER
     }
 }

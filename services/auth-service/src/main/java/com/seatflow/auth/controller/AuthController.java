@@ -91,7 +91,7 @@ public class AuthController {
             @RequestHeader("Authorization") String authorization) {
         String accessToken = authorization.replace("Bearer ", "");
         AuthService.ValidateResult result = authService.validate(accessToken);
-        return ResponseEntity.ok(ApiResponse.ok(new ValidateResponse(result.userId(), result.email())));
+        return ResponseEntity.ok(ApiResponse.ok(new ValidateResponse(result.userId(), result.email(), result.role())));
     }
 
 }
