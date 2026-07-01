@@ -7,7 +7,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -20,7 +19,9 @@ public class SeatGenerationService {
 
     private final SeatRepository seatRepository;
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+// REQUIRES_NEW라 이 트랜잭션만 롤백되고 호출자(컨슈머)는 안전.
+//  @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(noRollbackFor = DataIntegrityViolationException.class)
     public void createSeats(ShowCreatedEvent event) {
         String showId = event.showId();
         List<Seat> seats = buildSeats(event);
@@ -29,8 +30,7 @@ public class SeatGenerationService {
             seatRepository.saveAll(seats);
             log.info("Seats created: showId={}, count={}", showId, seats.size());
         } catch (DataIntegrityViolationException e) {
-            // (show_id, section, number) unique 충돌 = 이미 생성된 공연(중복 이벤트) → 무시.
-            // REQUIRES_NEW라 이 트랜잭션만 롤백되고 호출자(컨슈머)는 안전.
+            // (show_id, section, number) unique 충돌 = 이미 생성된 공연(중복 이벤트) -> 무시.
             log.info("Seats already exist for show, skip (duplicate event): showId={}", showId);
         }
     }
