@@ -3,6 +3,7 @@ package com.seatflow.auth.jwt;
 import com.seatflow.auth.config.properties.JwtProperties;
 import com.seatflow.auth.exception.AuthErrorCode;
 import com.seatflow.common.exception.BusinessException;
+import com.seatflow.common.security.Role;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import lombok.RequiredArgsConstructor;
@@ -22,10 +23,11 @@ public class JwtProvider {
 
     private final JwtProperties jwtProperties;
 
-    public String generateAccessToken(String userId, String email) {
+    public String generateAccessToken(String userId, String email, Role role) {
         return Jwts.builder()
                 .subject(userId)
                 .claim("email", email)
+                .claim("role", role.name())
                 .claim("type", "access")
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtProperties.getAccessTokenExpiration()))
