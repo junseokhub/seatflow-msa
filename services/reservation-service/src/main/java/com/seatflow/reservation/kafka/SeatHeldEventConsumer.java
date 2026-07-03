@@ -37,7 +37,8 @@ public class SeatHeldEventConsumer {
                         payload.userId(),
                         payload.showId(),
                         payload.seatId(),
-                        payload.price()   // 서버측 가격을 예매 원가로 저장
+                        payload.price(),   // 서버측 가격을 예매 원가로 저장
+                        payload.showDate()
                 ));
     }
 }

@@ -11,4 +11,6 @@ public final class EventTopic {
     public static final String PAYMENT_COMPLETED = "payment.completed";
     public static final String PAYMENT_FAILED = "payment.failed";
     public static final String SHOW_CREATED = "show.created";
+
+    public static final String RESERVATION_CONFIRMED = "reservation.confirmed";
 }
