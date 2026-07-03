@@ -1,3 +1,5 @@
+// 기존 각 구현체(Card/Kakao 등)에 refund()를 추가한다. CARD 예시:
+
 package com.seatflow.payment.strategy;
 
 import com.seatflow.payment.domain.PaymentMethod;
@@ -8,22 +10,22 @@ import java.math.BigDecimal;
 
 @Slf4j
 @Component
-public class KakaoPaymentStrategy implements PaymentStrategy {
+public class CardPaymentStrategy implements PaymentStrategy {
 
     @Override
     public boolean process(String paymentNumber, BigDecimal amount) {
-        log.info("[Kakao] Processing payment: paymentNumber={}, amount={}", paymentNumber, amount);
-        return true; // Mock
+        log.info("[Card] approve: paymentNumber={}, amount={}", paymentNumber, amount);
+        return true;
     }
 
     @Override
     public boolean refund(String paymentNumber, BigDecimal refundAmount) {
-        log.info("[Kakao] refund: paymentNumber={}, refundAmount={}", paymentNumber, refundAmount);
+        log.info("[Card] refund: paymentNumber={}, refundAmount={}", paymentNumber, refundAmount);
         return true;
     }
 
     @Override
     public PaymentMethod supportedMethod() {
-        return PaymentMethod.KAKAO;
+        return PaymentMethod.CREDIT_CARD;
     }
 }

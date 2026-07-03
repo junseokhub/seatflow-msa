@@ -17,6 +17,12 @@ public class TossPaymentStrategy implements PaymentStrategy {
     }
 
     @Override
+    public boolean refund(String paymentNumber, BigDecimal refundAmount) {
+        log.info("[Toss] refund: paymentNumber={}, refundAmount={}", paymentNumber, refundAmount);
+        return true;
+    }
+
+    @Override
     public PaymentMethod supportedMethod() {
         return PaymentMethod.TOSS;
     }
