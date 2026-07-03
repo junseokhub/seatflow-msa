@@ -17,6 +17,12 @@ public class KakaoPaymentStrategy implements PaymentStrategy {
     }
 
     @Override
+    public boolean refund(String paymentNumber, BigDecimal refundAmount) {
+        log.info("[Kakao] refund: paymentNumber={}, refundAmount={}", paymentNumber, refundAmount);
+        return true;
+    }
+
+    @Override
     public PaymentMethod supportedMethod() {
         return PaymentMethod.KAKAO;
     }

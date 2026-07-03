@@ -36,6 +36,9 @@ public class Payment {
     @Column(nullable = false)
     private BigDecimal amount;
 
+    @Column
+    private BigDecimal refundedAmount;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PaymentStatus status;
@@ -64,6 +67,22 @@ public class Payment {
 
     public void fail() {
         this.status = PaymentStatus.FAILED;
+    }
+
+    /**
+     * 환불 완료 처리(COMPLETED → REFUNDED). 실제 환불액을 기록한다.
+     * 완료된 결제만 환불할 수 있고, 이미 REFUNDED면 멱등하게 무시한다(중복 환불 요청 대비).
+     */
+    public void refund(BigDecimal refundedAmount) {
+        if (this.status == PaymentStatus.REFUNDED) {
+            return;   // 이미 환불 → 멱등 무시
+        }
+        if (this.status != PaymentStatus.COMPLETED) {
+            throw new IllegalStateException(
+                    "완료된 결제만 환불할 수 있다: status=" + status);
+        }
+        this.status = PaymentStatus.REFUNDED;
+        this.refundedAmount = refundedAmount;
     }
 
     @Builder

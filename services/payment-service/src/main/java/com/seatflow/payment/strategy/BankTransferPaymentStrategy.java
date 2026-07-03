@@ -17,6 +17,12 @@ public class BankTransferPaymentStrategy implements PaymentStrategy {
     }
 
     @Override
+    public boolean refund(String paymentNumber, BigDecimal refundAmount) {
+        log.info("[BankTransfer] refund: paymentNumber={}, refundAmount={}", paymentNumber, refundAmount);
+        return true;
+    }
+
+    @Override
     public PaymentMethod supportedMethod() {
         return PaymentMethod.BANK_TRANSFER;
     }

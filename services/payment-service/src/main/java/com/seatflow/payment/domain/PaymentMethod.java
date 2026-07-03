@@ -4,6 +4,5 @@ public enum PaymentMethod {
     TOSS,
     KAKAO,
     CREDIT_CARD,
-    BANK_TRANSFER,
-    CASH
+    BANK_TRANSFER
 }
