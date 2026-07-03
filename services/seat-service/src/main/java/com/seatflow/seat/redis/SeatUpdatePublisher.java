@@ -1,7 +1,7 @@
 package com.seatflow.seat.redis;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.seatflow.seat.event.SeatStatusChangedEvent;
+import com.seatflow.common.event.seat.SeatStatusChangedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;

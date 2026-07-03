@@ -1,6 +1,6 @@
 package com.seatflow.seat.sse;
 
-import com.seatflow.seat.event.SeatStatusChangedEvent;
+import com.seatflow.common.event.seat.SeatStatusChangedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
