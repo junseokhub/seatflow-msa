@@ -13,6 +13,7 @@ public record ReservationResponse(
         String showId,
         Long seatId,
         BigDecimal amount,
+        LocalDateTime showDate,
         ReservationStatus status,
         LocalDateTime createdAt
 ) {
@@ -24,6 +25,7 @@ public record ReservationResponse(
                 reservation.getShowId(),
                 reservation.getSeatId(),
                 reservation.getAmount(),
+                reservation.getShowDate(),
                 reservation.getStatus(),
                 reservation.getCreatedAt()
         );
