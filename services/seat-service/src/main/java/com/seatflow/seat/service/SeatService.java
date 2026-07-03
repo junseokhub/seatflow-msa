@@ -1,19 +1,18 @@
 package com.seatflow.seat.service;
 
-import com.seatflow.common.event.EventEnvelope;
 import com.seatflow.common.event.EventTopic;
 import com.seatflow.common.event.seat.SeatHeldEvent;
+import com.seatflow.common.event.seat.SeatStatusChangedEvent;
 import com.seatflow.common.exception.BusinessException;
+import com.seatflow.common.outbox.jpa.OutboxAppender;
 import com.seatflow.seat.domain.Seat;
 import com.seatflow.seat.domain.SeatStatus;
-import com.seatflow.common.event.seat.SeatStatusChangedEvent;
 import com.seatflow.seat.exception.SeatErrorCode;
 import com.seatflow.seat.redis.SeatRedisProvider;
 import com.seatflow.seat.repository.SeatRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,8 +29,10 @@ public class SeatService {
 
     private final SeatRepository seatRepository;
     private final SeatRedisProvider seatRedisProvider;
-    private final KafkaTemplate<String, Object> kafkaTemplate;
     private final ApplicationEventPublisher eventPublisher;
+    private final OutboxAppender outboxAppender;
+
+    private static final String SOURCE = "seat-service";
 
     @Transactional(readOnly = true)
     public List<Seat> getSeats(String showId) {
@@ -85,20 +86,24 @@ public class SeatService {
                         SeatErrorCode.SEAT_ALREADY_RESERVED.getMessage());
             }
 
-            // 3. 좌석별 점유 이벤트 발행 (가격을 함께 실어 reservation이 서버측 금액을 확보)
-            // holdSeats의 "3. 좌석별 점유 이벤트 발행" 부분 교체
-            // seatById 맵에서 각 좌석의 price + showDate를 함께 실어 발행
+            // holdSeats의 "3. 좌석별 점유 이벤트 발행" 부분을 Outbox 적재로 교체.
+            // 기존엔 kafkaTemplate.send로 직접 발행(dual-write). 이제 Outbox에 적재하고
+            // 공통 OutboxScheduler가 발행을 보장한다. payment·reservation과 같은 패턴.
+            //
+            // 필드에 OutboxRepository, ObjectMapper(kafkaObjectMapper) 주입 필요.
+            // (kafkaTemplate은 SSE 등 다른 용도로 남을 수 있으니 유지 여부는 사용처 확인)
+
+            // 3. 좌석별 점유 이벤트 발행 (가격·공연일을 함께 실어 reservation이 서버측 값 확보)
+            //    Outbox에 적재 → 스케줄러가 발행 보장 (좌석 검증과 같은 트랜잭션)
             Map<Long, Seat> seatById = seats.stream()
                     .collect(Collectors.toMap(Seat::getId, Function.identity()));
             for (Long seatId : seatIds) {
                 Seat seat = seatById.get(seatId);
                 BigDecimal price = BigDecimal.valueOf(seat.getPrice());
-                kafkaTemplate.send(
-                        EventTopic.SEAT_HELD,
-                        userId,
-                        EventEnvelope.of(EventTopic.SEAT_HELD, "seat-service",
-                                new SeatHeldEvent(userId, showId, seatId, price, seat.getShowDate())));
+                outboxAppender.append(EventTopic.SEAT_HELD, SOURCE, userId,
+                        new SeatHeldEvent(userId, showId, seatId, price, seat.getShowDate()));
             }
+
         } catch (RuntimeException e) {
             // 하나라도 어긋나면 방금 잡은 점유 전부 되돌린다 (보상)
             seatIds.forEach(id -> seatRedisProvider.releaseIfOwner(showId, id, userId));

@@ -1,17 +1,14 @@
 package com.seatflow.auth.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.seatflow.auth.domain.Credentials;
-import com.seatflow.auth.domain.Outbox;
 import com.seatflow.auth.exception.AuthErrorCode;
 import com.seatflow.auth.jwt.JwtProvider;
 import com.seatflow.auth.redis.RedisProvider;
 import com.seatflow.auth.repository.CredentialsRepository;
-import com.seatflow.auth.repository.OutboxRepository;
-import com.seatflow.common.event.EventEnvelope;
 import com.seatflow.common.event.EventTopic;
 import com.seatflow.common.event.user.UserRegisteredEvent;
 import com.seatflow.common.exception.BusinessException;
+import com.seatflow.common.outbox.jpa.OutboxAppender;
 import com.seatflow.common.security.Role;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,8 +27,7 @@ public class AuthService {
     private final BCryptPasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
     private final RedisProvider redisProvider;
-    private final OutboxRepository outboxRepository;
-    private final ObjectMapper kafkaObjectMapper;
+    private final OutboxAppender outboxAppender;
 
     @Transactional
     public void signup(String email, String password, String name) {
@@ -49,31 +45,17 @@ public class AuthService {
                 .userId(userId)
                 .email(email)
                 .passwordHash(passwordHash)
+                .role(Role.USER)
                 .build();
 
         credentialsRepository.save(credentials);
 
-        // Kafka 직접 발행 대신 Outbox에 저장 (같은 트랜잭션)
-        try {
-            EventEnvelope<UserRegisteredEvent> event = EventEnvelope.of(
-                    EventTopic.USER_REGISTERED,
-                    "auth-service",
-                    new UserRegisteredEvent(userId, email, name)
-            );
-            String payload = kafkaObjectMapper.writeValueAsString(event);
-
-            outboxRepository.save(Outbox.builder()
-                    .eventId(event.eventId())
-                    .eventType(EventTopic.USER_REGISTERED)
-                    .messageKey(userId)
-                    .payload(payload)
-                    .build());
-        } catch (Exception e) {
-            throw new BusinessException(
-                    AuthErrorCode.INTERNAL_ERROR.getStatus().value(),
-                    AuthErrorCode.INTERNAL_ERROR.getMessage()
-            );
-        }
+        // Outbox에 적재 (같은 트랜잭션 → dual-write 제거)
+        outboxAppender.append(
+                EventTopic.USER_REGISTERED,
+                "auth-service",
+                userId,
+                new UserRegisteredEvent(userId, email, name));
     }
 
     @Transactional(readOnly = true)

@@ -6,12 +6,16 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
-@EnableJpaRepositories(basePackages = "com.seatflow")
-@EntityScan(basePackages = "com.seatflow")
-@EnableScheduling
+@EntityScan(basePackages = {
+		"com.seatflow.auth.domain",
+		"com.seatflow.common.outbox.jpa"
+})
+@EnableJpaRepositories(basePackages = {
+		"com.seatflow.auth.repository",
+		"com.seatflow.common.outbox.jpa"
+})
 @EnableConfigurationProperties(JwtProperties.class)
 public class AuthServiceApplication {
 	public static void main(String[] args) {

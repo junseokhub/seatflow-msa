@@ -1,18 +1,15 @@
 package com.seatflow.payment.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.seatflow.common.event.EventEnvelope;
 import com.seatflow.common.event.EventTopic;
 import com.seatflow.common.event.payment.PaymentCompletedEvent;
 import com.seatflow.common.event.payment.PaymentFailedEvent;
 import com.seatflow.common.exception.BusinessException;
+import com.seatflow.common.outbox.jpa.OutboxAppender;
 import com.seatflow.payment.client.ReservationClient;
 import com.seatflow.payment.client.ReservationView;
-import com.seatflow.payment.domain.Outbox;
 import com.seatflow.payment.domain.Payment;
 import com.seatflow.payment.domain.PaymentStatus;
 import com.seatflow.payment.exception.PaymentErrorCode;
-import com.seatflow.payment.repository.OutboxRepository;
 import com.seatflow.payment.repository.PaymentRepository;
 import com.seatflow.payment.service.command.ProcessPaymentCommand;
 import com.seatflow.payment.strategy.PaymentStrategyRegistry;
@@ -37,10 +34,9 @@ public class DefaultPaymentService implements PaymentService {
     private static final String STATUS_PENDING = "PENDING";
 
     private final PaymentRepository paymentRepository;
-    private final OutboxRepository outboxRepository;
-    private final ObjectMapper kafkaObjectMapper;
     private final PaymentStrategyRegistry strategyRegistry;
     private final ReservationClient reservationClient;
+    private final OutboxAppender outboxAppender;
 
     @Override
     @Transactional
@@ -87,12 +83,12 @@ public class DefaultPaymentService implements PaymentService {
                         PaymentErrorCode.PAYMENT_ALREADY_COMPLETED.getStatus().value(),
                         PaymentErrorCode.PAYMENT_ALREADY_COMPLETED.getMessage());
             }
-            appendOutbox(EventTopic.PAYMENT_COMPLETED, command.userId(),
+            outboxAppender.append(EventTopic.PAYMENT_COMPLETED, SOURCE, command.userId(),
                     new PaymentCompletedEvent(command.reservationId(), command.userId(), payAmount));
             log.info("Payment completed: paymentNumber={}", payment.getPaymentNumber());
         } else {
             payment.fail();
-            appendOutbox(EventTopic.PAYMENT_FAILED, command.userId(),
+            outboxAppender.append(EventTopic.PAYMENT_FAILED, SOURCE, command.userId(),
                     new PaymentFailedEvent(command.reservationId(), command.userId(), payAmount));
             log.info("Payment failed: paymentNumber={}", payment.getPaymentNumber());
         }
@@ -115,26 +111,6 @@ public class DefaultPaymentService implements PaymentService {
             throw new BusinessException(
                     PaymentErrorCode.RESERVATION_NOT_FOUND.getStatus().value(),
                     PaymentErrorCode.RESERVATION_NOT_FOUND.getMessage());
-        }
-    }
-
-    private void appendOutbox(String eventType, String messageKey, Object event) {
-        EventEnvelope<?> envelope = EventEnvelope.of(eventType, SOURCE, event);
-        outboxRepository.save(Outbox.builder()
-                .eventId(envelope.eventId())
-                .eventType(eventType)
-                .messageKey(messageKey)
-                .payload(toJson(envelope))
-                .build());
-    }
-
-    private String toJson(Object o) {
-        try {
-            return kafkaObjectMapper.writeValueAsString(o);
-        } catch (Exception e) {
-            throw new BusinessException(
-                    PaymentErrorCode.INTERNAL_ERROR.getStatus().value(),
-                    PaymentErrorCode.INTERNAL_ERROR.getMessage());
         }
     }
 

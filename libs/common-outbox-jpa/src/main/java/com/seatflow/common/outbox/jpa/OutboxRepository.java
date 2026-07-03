@@ -1,7 +1,5 @@
-package com.seatflow.reservation.repository;
+package com.seatflow.common.outbox.jpa;
 
-import com.seatflow.reservation.domain.Outbox;
-import com.seatflow.common.outbox.OutboxStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;

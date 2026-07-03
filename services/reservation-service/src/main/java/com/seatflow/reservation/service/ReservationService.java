@@ -1,15 +1,12 @@
 package com.seatflow.reservation.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.seatflow.common.event.EventEnvelope;
 import com.seatflow.common.event.EventTopic;
 import com.seatflow.common.event.reservation.ReservationConfirmedEvent;
 import com.seatflow.common.exception.BusinessException;
-import com.seatflow.reservation.domain.Outbox;
+import com.seatflow.common.outbox.jpa.OutboxAppender;
 import com.seatflow.reservation.domain.Reservation;
 import com.seatflow.reservation.domain.ReservationStatus;
 import com.seatflow.reservation.exception.ReservationErrorCode;
-import com.seatflow.reservation.repository.OutboxRepository;
 import com.seatflow.reservation.repository.ReservationRepository;
 import com.seatflow.reservation.service.command.CreateReservationCommand;
 import lombok.RequiredArgsConstructor;
@@ -25,10 +22,8 @@ import java.util.List;
 public class ReservationService {
 
     private static final String SOURCE = "reservation-service";
-
+    private final OutboxAppender outboxAppender;
     private final ReservationRepository reservationRepository;
-    private final OutboxRepository outboxRepository;
-    private final ObjectMapper kafkaObjectMapper;
 
     @Transactional
     public Reservation createReservation(CreateReservationCommand command) {
@@ -62,7 +57,8 @@ public class ReservationService {
 
         // 실제로 이번에 확정된 경우에만 발행(중복 payment.completed로 인한 중복 발행 방지)
         if (wasPending) {
-            appendOutbox(EventTopic.RESERVATION_CONFIRMED, String.valueOf(reservation.getSeatId()),
+            outboxAppender.append(EventTopic.RESERVATION_CONFIRMED, SOURCE,
+                    String.valueOf(reservation.getSeatId()),
                     new ReservationConfirmedEvent(
                             reservation.getId(),
                             reservation.getUserId(),
@@ -97,25 +93,5 @@ public class ReservationService {
         }
 
         reservation.cancel();
-    }
-
-    private void appendOutbox(String eventType, String messageKey, Object event) {
-        EventEnvelope<?> envelope = EventEnvelope.of(eventType, SOURCE, event);
-        outboxRepository.save(Outbox.builder()
-                .eventId(envelope.eventId())
-                .eventType(eventType)
-                .messageKey(messageKey)
-                .payload(toJson(envelope))
-                .build());
-    }
-
-    private String toJson(Object o) {
-        try {
-            return kafkaObjectMapper.writeValueAsString(o);
-        } catch (Exception e) {
-            throw new BusinessException(
-                    ReservationErrorCode.INTERNAL_ERROR.getStatus().value(),
-                    ReservationErrorCode.INTERNAL_ERROR.getMessage());
-        }
     }
 }

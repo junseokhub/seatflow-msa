@@ -6,7 +6,7 @@ dependencies {
 	implementation(project(":libs:common-web"))
 	implementation(project(":libs:common-kafka"))
 	implementation(project(":libs:common-redis"))
-	implementation(project(":libs:common-outbox"))
+	implementation(project(":libs:common-outbox-jpa"))
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("org.springframework.boot:spring-boot-starter-web")

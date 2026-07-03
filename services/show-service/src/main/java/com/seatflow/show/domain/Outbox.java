@@ -1,6 +1,5 @@
 package com.seatflow.show.domain;
 
-import com.seatflow.common.outbox.OutboxMessage;
 import lombok.Builder;
 import lombok.Getter;
 import org.springframework.data.annotation.Id;
@@ -10,13 +9,14 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.LocalDateTime;
 
 /**
- * Mongo 버전 Outbox. common-outbox(JPA)와 필드·상태·전이 로직은 동일하며,
- * 저장소만 MongoDB다. 상태 전이는 MongoOutboxStore에서 findAndModify로 원자적으로 수행하므로
+ * Mongo 전용 Outbox 도큐먼트. show-service 안에서 단독으로 사용하며,
+ * 공통 outbox 모듈(interface)에 의존하지 않는다.
+ * 상태 전이는 MongoOutboxStore에서 findAndModify로 원자적으로 수행하므로
  * (JPA처럼 더티체킹으로 자동 반영되지 않음) 여기서는 도큐먼트 구조와 정적 팩토리만 둔다.
  */
 @Document(collection = "outbox")
 @Getter
-public class Outbox implements OutboxMessage {
+public class Outbox {
 
     @Id
     private String id;

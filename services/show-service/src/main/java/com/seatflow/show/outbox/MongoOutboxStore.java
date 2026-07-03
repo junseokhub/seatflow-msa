@@ -1,20 +1,16 @@
 package com.seatflow.show.outbox;
 
 import com.mongodb.client.result.DeleteResult;
-import com.seatflow.common.outbox.OutboxBackoff;
-import com.seatflow.common.outbox.OutboxMessage;
-import com.seatflow.common.outbox.OutboxStatus;
-import com.seatflow.common.outbox.OutboxStore;
 import com.seatflow.show.domain.Outbox;
+import com.seatflow.show.domain.OutboxStatus;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -23,19 +19,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * OutboxStore의 Mongo 구현(어댑터). 동시성 제어는 findAndModify로 한다
- * (JPA의 FOR UPDATE SKIP LOCKED에 대응). 백오프 정책은 공통 OutboxBackoff 사용.
- * 실패/격리 흔적은 outbox 상태(status, retryCount)로 남는다.
+ * Mongo 전용 Outbox 저장소(DAO). 동시성 제어는 findAndModify로 한다.
+ * common-outbox 모듈에 대한 의존이 없는, show-service 단독 구현이다.
+ * (다른 구현체로 교체될 일이 없으므로 인터페이스 추상화 없이 바로 구현한다.)
  */
-@Service
+@Component
 @RequiredArgsConstructor
-@ConditionalOnClass(name = "org.springframework.data.mongodb.core.MongoTemplate")
-public class MongoOutboxStore implements OutboxStore {
+public class MongoOutboxStore {
 
     private final MongoTemplate mongoTemplate;
 
-    @Override
-    public List<? extends OutboxMessage> claimPending(int limit) {
+    public List<Outbox> claimPending(int limit) {
         List<Outbox> claimed = new ArrayList<>();
         LocalDateTime now = LocalDateTime.now();
 
@@ -60,13 +54,12 @@ public class MongoOutboxStore implements OutboxStore {
         return claimed;
     }
 
-    @Override
     public int deletePublishedBefore(int retentionHours, int limit) {
         Instant threshold = Instant.now().minus(retentionHours, ChronoUnit.HOURS);
 
         // 1) 지울 대상 _id 만 limit개 선별 (인덱스: status + publishedAt)
         Query selectQuery = new Query(
-                Criteria.where("status").is("PUBLISHED")
+                Criteria.where("status").is(OutboxStatus.PUBLISHED)
                         .and("publishedAt").lt(threshold))
                 .limit(limit);
         selectQuery.fields().include("_id");
@@ -83,7 +76,6 @@ public class MongoOutboxStore implements OutboxStore {
         return (int) result.getDeletedCount();
     }
 
-    @Override
     public void markPublished(String id) {
         Query query = new Query(Criteria.where("_id").is(id)
                 .and("status").is(OutboxStatus.PUBLISHING));
@@ -93,7 +85,6 @@ public class MongoOutboxStore implements OutboxStore {
         mongoTemplate.updateFirst(query, update, Outbox.class);
     }
 
-    @Override
     public void markFailedOrRetry(String id) {
         Outbox doc = mongoTemplate.findById(id, Outbox.class);
         if (doc == null) return;
@@ -115,7 +106,6 @@ public class MongoOutboxStore implements OutboxStore {
         }
     }
 
-    @Override
     public void recoverStuck(int minutes) {
         LocalDateTime threshold = LocalDateTime.now().minusMinutes(minutes);
         Query query = new Query(Criteria.where("status").is(OutboxStatus.PUBLISHING)
@@ -126,7 +116,6 @@ public class MongoOutboxStore implements OutboxStore {
         mongoTemplate.updateMulti(query, update, Outbox.class);
     }
 
-    @Override
     public long redriveFailed(int limit) {
         long count = 0;
         for (int i = 0; i < limit; i++) {
