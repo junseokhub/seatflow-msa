@@ -80,7 +80,7 @@ public class ShowService {
                         g.capacity(),
                         g.price()))
                 .toList();
-        return new ShowCreatedEvent(show.getId(), grades);
+        return new ShowCreatedEvent(show.getId(), show.getShowDate(), grades);
     }
 
     private String toJson(Object o) {
