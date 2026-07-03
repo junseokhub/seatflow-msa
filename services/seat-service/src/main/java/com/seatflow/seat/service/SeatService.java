@@ -6,7 +6,7 @@ import com.seatflow.common.event.seat.SeatHeldEvent;
 import com.seatflow.common.exception.BusinessException;
 import com.seatflow.seat.domain.Seat;
 import com.seatflow.seat.domain.SeatStatus;
-import com.seatflow.seat.event.SeatStatusChangedEvent;
+import com.seatflow.common.event.seat.SeatStatusChangedEvent;
 import com.seatflow.seat.exception.SeatErrorCode;
 import com.seatflow.seat.redis.SeatRedisProvider;
 import com.seatflow.seat.repository.SeatRepository;

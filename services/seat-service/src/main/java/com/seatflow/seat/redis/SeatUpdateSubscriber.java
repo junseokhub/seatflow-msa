@@ -1,7 +1,7 @@
 package com.seatflow.seat.redis;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.seatflow.seat.event.SeatStatusChangedEvent;
+import com.seatflow.common.event.seat.SeatStatusChangedEvent;
 import com.seatflow.seat.sse.SeatEmitterStore;
 import com.seatflow.seat.sse.SeatUpdateMessage;
 import lombok.RequiredArgsConstructor;
