@@ -66,8 +66,9 @@ public class Seat {
     }
 
     @Builder
-    private Seat(String showId, String section, String seatRow, int number, int price) {
+    private Seat(String showId, LocalDateTime showDate, String section, String seatRow, int number, int price) {
         this.showId = showId;
+        this.showDate = showDate;
         this.section = section;
         this.seatRow = seatRow;
         this.number = number;
