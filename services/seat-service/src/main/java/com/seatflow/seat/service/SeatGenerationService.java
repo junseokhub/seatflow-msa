@@ -55,16 +55,17 @@ public class SeatGenerationService {
             throw e;
         }
     }
-    
+
     private List<Seat> buildSeats(ShowCreatedEvent event) {
         List<Seat> seats = new ArrayList<>();
         for (ShowCreatedEvent.GradeSpec grade : event.grades()) {
-            String section = grade.grade().name();   // VIP/R/S
+            String section = grade.grade().name();
             for (int number = 1; number <= grade.capacity(); number++) {
                 seats.add(Seat.builder()
                         .showId(event.showId())
+                        .showDate(event.showDate())
                         .section(section)
-                        .seatRow(section)            // 등급명을 행으로(단순). 좌석배치 고도화 시 분리
+                        .seatRow(section)
                         .number(number)
                         .price(grade.price().intValue())
                         .build());

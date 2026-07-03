@@ -86,17 +86,19 @@ public class SeatService {
             }
 
             // 3. 좌석별 점유 이벤트 발행 (가격을 함께 실어 reservation이 서버측 금액을 확보)
+            // holdSeats의 "3. 좌석별 점유 이벤트 발행" 부분 교체
+            // seatById 맵에서 각 좌석의 price + showDate를 함께 실어 발행
             Map<Long, Seat> seatById = seats.stream()
                     .collect(Collectors.toMap(Seat::getId, Function.identity()));
             for (Long seatId : seatIds) {
-                BigDecimal price = BigDecimal.valueOf(seatById.get(seatId).getPrice());
+                Seat seat = seatById.get(seatId);
+                BigDecimal price = BigDecimal.valueOf(seat.getPrice());
                 kafkaTemplate.send(
                         EventTopic.SEAT_HELD,
                         userId,
                         EventEnvelope.of(EventTopic.SEAT_HELD, "seat-service",
-                                new SeatHeldEvent(userId, showId, seatId, price)));
+                                new SeatHeldEvent(userId, showId, seatId, price, seat.getShowDate())));
             }
-
         } catch (RuntimeException e) {
             // 하나라도 어긋나면 방금 잡은 점유 전부 되돌린다 (보상)
             seatIds.forEach(id -> seatRedisProvider.releaseIfOwner(showId, id, userId));
@@ -108,5 +110,30 @@ public class SeatService {
         // 점유 성공 사실 발행 (SSE는 이 사실을 구독해서 알아서 전송)
         seatIds.forEach(id ->
                 eventPublisher.publishEvent(new SeatStatusChangedEvent(showId, id, "HELD")));
+    }
+
+    // SeatService에 추가 (기존 필드에 SeatRepository, SeatRedisProvider 이미 있음)
+
+    /**
+     * 예매 확정(reservation.confirmed)으로 좌석을 확정 점유한다.
+     * DB 상태를 RESERVED로 바꾸고(임시 점유 → 영구 확정), 남은 Redis hold 키를 정리한다.
+     *
+     * 멱등성: 같은 reservation.confirmed가 중복 도착해도 Seat.reserve()가 이미 RESERVED면
+     * 무시한다(상태 전이 멱등). 좌석이 없으면 로깅 후 무시한다.
+     */
+    @Transactional
+    public void reserveSeat(String showId, Long seatId, String userId) {
+        Seat seat = seatRepository.findById(seatId).orElse(null);
+        if (seat == null) {
+            log.warn("Seat not found for reserve, skip: seatId={}", seatId);
+            return;
+        }
+
+        seat.reserve();   // AVAILABLE/HELD → RESERVED (이미 RESERVED면 멱등 무시)
+
+        // 확정됐으니 임시 점유(Redis hold)는 더 필요 없다. 정리한다.
+        seatRedisProvider.release(showId, seatId);
+
+        log.info("Seat reserved (confirmed): showId={}, seatId={}", showId, seatId);
     }
 }

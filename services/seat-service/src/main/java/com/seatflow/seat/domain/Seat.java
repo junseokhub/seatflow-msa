@@ -28,6 +28,9 @@ public class Seat {
     @Column(name = "show_id", nullable = false)
     private String showId;
 
+    @Column(name = "show_date", nullable = false)
+    private LocalDateTime showDate;
+
     @Column(nullable = false)
     private String section;     // 등급(VIP/R/S)을 section으로 매핑
 
@@ -69,5 +72,29 @@ public class Seat {
         this.seatRow = seatRow;
         this.number = number;
         this.price = price;
+    }
+
+    /**
+     * 결제 완료로 좌석을 확정 점유한다(→ RESERVED).
+     * 임시 점유(Redis hold)를 영구 확정(DB)으로 넘기는 전이다.
+     * 이미 RESERVED면 멱등하게 무시한다(reservation.confirmed 중복 수신 대비).
+     */
+    public void reserve() {
+        if (this.status == SeatStatus.RESERVED) {
+            return;   // 이미 확정 → 멱등 무시
+        }
+        this.status = SeatStatus.RESERVED;
+    }
+
+    /**
+     * 예매 취소로 좌석을 다시 풀어준다(→ AVAILABLE).
+     * 취소·환불 Saga의 좌석 반환 단계에서 호출한다.
+     * 이미 AVAILABLE이면 멱등하게 무시한다.
+     */
+    public void release() {
+        if (this.status == SeatStatus.AVAILABLE) {
+            return;   // 이미 반환 → 멱등 무시
+        }
+        this.status = SeatStatus.AVAILABLE;
     }
 }

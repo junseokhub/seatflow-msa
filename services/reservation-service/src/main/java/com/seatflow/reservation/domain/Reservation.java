@@ -33,6 +33,9 @@ public class Reservation {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
 
+    @Column(name = "show_date", nullable = false)
+    private LocalDateTime showDate;
+
     @Column(nullable = false, unique = true, updatable = false)
     private String reservationNumber;
 
@@ -57,13 +60,15 @@ public class Reservation {
     void preUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
-
+    
     @Builder
-    private Reservation(String userId, String showId, Long seatId, BigDecimal amount) {
+    private Reservation(String userId, String showId, Long seatId,
+                        BigDecimal amount, LocalDateTime showDate) {
         this.userId = userId;
         this.showId = showId;
         this.seatId = seatId;
         this.amount = amount;
+        this.showDate = showDate;
         this.reservationNumber = UUID.randomUUID().toString();
     }
 
