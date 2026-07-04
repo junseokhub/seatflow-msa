@@ -13,4 +13,13 @@ public final class EventTopic {
     public static final String SHOW_CREATED = "show.created";
 
     public static final String RESERVATION_CONFIRMED = "reservation.confirmed";
+
+    public static final String SEAT_RELEASE_COMMAND = "seat.release.command";
+    public static final String SEAT_RELEASED = "seat.released";
+    public static final String SEAT_RESERVE_COMPENSATION_COMMAND = "seat.reserve.compensation.command";
+    public static final String SEAT_RESERVED_COMPENSATED = "seat.reserved.compensated";
+
+    public static final String PAYMENT_REFUND_COMMAND = "payment.refund.command";
+    public static final String PAYMENT_REFUNDED = "payment.refunded";
+    public static final String PAYMENT_REFUND_FAILED = "payment.refund.failed";
 }
