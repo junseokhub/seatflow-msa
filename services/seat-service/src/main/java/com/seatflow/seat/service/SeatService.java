@@ -2,6 +2,8 @@ package com.seatflow.seat.service;
 
 import com.seatflow.common.event.EventTopic;
 import com.seatflow.common.event.seat.SeatHeldEvent;
+import com.seatflow.common.event.seat.SeatReleasedEvent;
+import com.seatflow.common.event.seat.SeatReservedCompensatedEvent;
 import com.seatflow.common.event.seat.SeatStatusChangedEvent;
 import com.seatflow.common.exception.BusinessException;
 import com.seatflow.common.outbox.jpa.OutboxAppender;
@@ -140,5 +142,45 @@ public class SeatService {
         seatRedisProvider.release(showId, seatId);
 
         log.info("Seat reserved (confirmed): showId={}, seatId={}", showId, seatId);
+    }
+
+    /**
+     * 취소 Saga의 좌석 반환 명령 처리. DB 상태를 AVAILABLE로 되돌리고 응답을 발행한다.
+     * seat.release()가 이미 멱등(AVAILABLE이면 무시)이라 중복 명령도 안전하다.
+     */
+    @Transactional
+    public void releaseSeatForCancellation(Long sagaId, Long reservationId, String showId, Long seatId) {
+        Seat seat = seatRepository.findById(seatId).orElse(null);
+        if (seat == null) {
+            log.warn("Seat not found for cancel release, skip: seatId={}", seatId);
+            return;
+        }
+
+        seat.release();   // RESERVED → AVAILABLE (이미 AVAILABLE이면 멱등 무시)
+
+        outboxAppender.append(EventTopic.SEAT_RELEASED, SOURCE, String.valueOf(seatId),
+                new SeatReleasedEvent(sagaId, reservationId, seatId));
+
+        log.info("Seat released for cancellation: sagaId={}, seatId={}", sagaId, seatId);
+    }
+
+    /**
+     * 취소 Saga 보상: 환불 실패로 되돌아온 좌석을 다시 점유(RESERVED)시키고 응답을 발행한다.
+     * seat.reserve()가 이미 멱등이라 중복 명령도 안전하다.
+     */
+    @Transactional
+    public void reserveSeatForCompensation(Long sagaId, Long reservationId, String showId, Long seatId) {
+        Seat seat = seatRepository.findById(seatId).orElse(null);
+        if (seat == null) {
+            log.warn("Seat not found for compensation reserve, skip: seatId={}", seatId);
+            return;
+        }
+
+        seat.reserve();   // AVAILABLE → RESERVED (이미 RESERVED면 멱등 무시)
+
+        outboxAppender.append(EventTopic.SEAT_RESERVED_COMPENSATED, SOURCE, String.valueOf(seatId),
+                new SeatReservedCompensatedEvent(sagaId, reservationId, seatId));
+
+        log.info("Seat reserved back (compensated): sagaId={}, seatId={}", sagaId, seatId);
     }
 }

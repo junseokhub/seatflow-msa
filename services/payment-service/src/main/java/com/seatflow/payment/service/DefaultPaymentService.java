@@ -3,6 +3,8 @@ package com.seatflow.payment.service;
 import com.seatflow.common.event.EventTopic;
 import com.seatflow.common.event.payment.PaymentCompletedEvent;
 import com.seatflow.common.event.payment.PaymentFailedEvent;
+import com.seatflow.common.event.payment.PaymentRefundFailedEvent;
+import com.seatflow.common.event.payment.PaymentRefundedEvent;
 import com.seatflow.common.exception.BusinessException;
 import com.seatflow.common.outbox.jpa.OutboxAppender;
 import com.seatflow.payment.client.ReservationClient;
@@ -122,5 +124,51 @@ public class DefaultPaymentService implements PaymentService {
                         PaymentErrorCode.PAYMENT_NOT_FOUND.getStatus().value(),
                         PaymentErrorCode.PAYMENT_NOT_FOUND.getMessage()
                 ));
+    }
+
+    /**
+     * 취소 Saga의 환불 명령을 처리한다. 결제한 수단(PaymentStrategy)으로 환불을 라우팅하고,
+     * 결과에 따라 성공/실패 응답을 발행한다.
+     *
+     * 멱등성: Payment.refund()가 이미 REFUNDED면 무시하는 상태 가드다. 다만 같은 명령이
+     * 중복 도착해 이미 REFUNDED 처리된 뒤라면, 응답도 다시 성공으로 발행해 오케스트레이터가
+     * 놓친 응답을 다시 받을 수 있게 한다(at-least-once 전제).
+     */
+    @Transactional
+    public void executeRefund(Long sagaId, Long reservationId, BigDecimal refundAmount) {
+        Payment payment = paymentRepository
+                .findByReservationIdAndStatus(reservationId, PaymentStatus.COMPLETED)
+                .orElseGet(() -> paymentRepository
+                        .findByReservationIdAndStatus(reservationId, PaymentStatus.REFUNDED)
+                        .orElse(null));
+
+        if (payment == null) {
+            log.warn("Payment not found for refund: sagaId={}, reservationId={}", sagaId, reservationId);
+            outboxAppender.append(EventTopic.PAYMENT_REFUND_FAILED, SOURCE, String.valueOf(reservationId),
+                    new PaymentRefundFailedEvent(sagaId, reservationId, "결제 내역을 찾을 수 없음"));
+            return;
+        }
+
+        if (payment.getStatus() == PaymentStatus.REFUNDED) {
+            // 이미 환불 완료된 상태(중복 명령) → 성공 응답 재발행
+            outboxAppender.append(EventTopic.PAYMENT_REFUNDED, SOURCE, String.valueOf(reservationId),
+                    new PaymentRefundedEvent(sagaId, reservationId, payment.getRefundedAmount()));
+            return;
+        }
+
+        boolean success = strategyRegistry
+                .get(payment.getPaymentMethod())
+                .refund(payment.getPaymentNumber(), refundAmount);
+
+        if (success) {
+            payment.refund(refundAmount);
+            outboxAppender.append(EventTopic.PAYMENT_REFUNDED, SOURCE, String.valueOf(reservationId),
+                    new PaymentRefundedEvent(sagaId, reservationId, refundAmount));
+            log.info("Refund completed: sagaId={}, paymentNumber={}", sagaId, payment.getPaymentNumber());
+        } else {
+            outboxAppender.append(EventTopic.PAYMENT_REFUND_FAILED, SOURCE, String.valueOf(reservationId),
+                    new PaymentRefundFailedEvent(sagaId, reservationId, "PG 환불 승인 거절"));
+            log.warn("Refund failed: sagaId={}, paymentNumber={}", sagaId, payment.getPaymentNumber());
+        }
     }
 }
