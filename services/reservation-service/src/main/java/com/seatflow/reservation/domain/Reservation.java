@@ -92,6 +92,18 @@ public class Reservation {
     }
 
     /**
+     * 취소 Saga 시작. CONFIRMED만 취소할 수 있다(CANCELLING으로 전이).
+     */
+    public void startCancelling() {
+        if (this.status != ReservationStatus.CONFIRMED) {
+            throw new IllegalStateException(
+                    "확정된 예매만 취소할 수 있다: status=" + status);
+        }
+        this.status = ReservationStatus.CANCELLING;
+    }
+
+
+    /**
      * 취소 Saga 보상 완료로 예매를 원상복구한다(CANCELLING → CONFIRMED).
      * 환불이 실패해 좌석을 다시 점유시켰으니, 예매도 확정 상태로 되돌린다.
      * CANCELLING이 아니면(이미 처리된 중복 호출) 조용히 무시한다.
