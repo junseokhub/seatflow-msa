@@ -35,8 +35,8 @@ public class PaymentCompletedEventConsumer {
             event = kafkaObjectMapper.readValue(
                     message, new TypeReference<EventEnvelope<PaymentCompletedEvent>>() {});
         } catch (Exception e) {
-            log.error("Malformed payment.completed skipped: {}", e.getMessage(), e);
-            return;
+            log.error("Malformed payment.completed: {}", e.getMessage());
+            throw new IllegalStateException("Malformed payment.completed", e);
         }
 
         PaymentCompletedEvent payload = event.payload();

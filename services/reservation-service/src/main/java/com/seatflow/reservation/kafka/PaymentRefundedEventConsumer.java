@@ -27,8 +27,8 @@ public class PaymentRefundedEventConsumer {
                     message, new TypeReference<EventEnvelope<PaymentRefundedEvent>>() {});
             payload = event.payload();
         } catch (Exception e) {
-            log.error("Malformed payment.refunded skipped: {}", e.getMessage(), e);
-            return;
+            log.error("Malformed payment.refunded: {}", e.getMessage());
+            throw new IllegalStateException("Malformed payment.refunded", e);
         }
         orchestrator.onPaymentRefunded(payload.sagaId(), payload.reservationId());
     }

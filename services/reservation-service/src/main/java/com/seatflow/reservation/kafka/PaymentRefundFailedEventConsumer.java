@@ -27,8 +27,8 @@ public class PaymentRefundFailedEventConsumer {
                     message, new TypeReference<EventEnvelope<PaymentRefundFailedEvent>>() {});
             payload = event.payload();
         } catch (Exception e) {
-            log.error("Malformed payment.refund.failed skipped: {}", e.getMessage(), e);
-            return;
+            log.error("Malformed payment.refund.failed: {}", e.getMessage());
+            throw new IllegalStateException("Malformed payment.refund.failed", e);
         }
         orchestrator.onPaymentRefundFailed(payload.sagaId(), payload.reservationId(), payload.reason());
     }

@@ -28,8 +28,11 @@ public class SeatHeldEventConsumer {
                     message, new TypeReference<EventEnvelope<SeatHeldEvent>>() {});
             payload = event.payload();
         } catch (Exception e) {
-            log.error("Malformed seat.held skipped: {}", e.getMessage(), e);
-            return;
+            // 역직렬화 실패(poison message)는 재시도해도 똑같이 실패한다.
+            // 여기서 삼키고 return하면 공통 에러 핸들러(DLQ)가 개입할 기회 자체가 없어진다.
+            // 던져서 재시도(3번) 후 DLQ(seat.held.DLT)로 격리되게 한다.
+            log.error("Malformed seat.held: {}", e.getMessage());
+            throw new IllegalStateException("Malformed seat.held", e);
         }
 
         reservationService.createReservation(
@@ -37,7 +40,7 @@ public class SeatHeldEventConsumer {
                         payload.userId(),
                         payload.showId(),
                         payload.seatId(),
-                        payload.price(),   // 서버측 가격을 예매 원가로 저장
+                        payload.price(),
                         payload.showDate()
                 ));
     }

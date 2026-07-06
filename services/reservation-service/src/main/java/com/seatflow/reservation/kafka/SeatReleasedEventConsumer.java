@@ -27,8 +27,8 @@ public class SeatReleasedEventConsumer {
                     message, new TypeReference<EventEnvelope<SeatReleasedEvent>>() {});
             payload = event.payload();
         } catch (Exception e) {
-            log.error("Malformed seat.released skipped: {}", e.getMessage(), e);
-            return;
+            log.error("Malformed seat.released: {}", e.getMessage());
+            throw new IllegalStateException("Malformed seat.released", e);
         }
         orchestrator.onSeatReleased(payload.sagaId(), payload.reservationId());
     }
