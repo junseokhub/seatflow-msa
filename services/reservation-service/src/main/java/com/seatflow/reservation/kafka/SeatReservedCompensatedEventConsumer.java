@@ -27,8 +27,8 @@ public class SeatReservedCompensatedEventConsumer {
                     message, new TypeReference<EventEnvelope<SeatReservedCompensatedEvent>>() {});
             payload = event.payload();
         } catch (Exception e) {
-            log.error("Malformed seat.reserved.compensated skipped: {}", e.getMessage(), e);
-            return;
+            log.error("Malformed seat.reserved.compensated: {}", e.getMessage());
+            throw new IllegalStateException("Malformed seat.reserved.compensated", e);
         }
         orchestrator.onSeatReservedCompensated(payload.sagaId(), payload.reservationId());
     }

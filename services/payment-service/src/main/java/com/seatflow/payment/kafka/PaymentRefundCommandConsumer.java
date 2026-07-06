@@ -31,8 +31,8 @@ public class PaymentRefundCommandConsumer {
                     message, new TypeReference<EventEnvelope<PaymentRefundCommand>>() {});
             command = event.payload();
         } catch (Exception e) {
-            log.error("Malformed payment.refund.command skipped: {}", e.getMessage(), e);
-            return;
+            log.error("Malformed payment.refund.command: {}", e.getMessage());
+            throw new IllegalStateException("Malformed payment.refund.command", e);
         }
 
         paymentService.executeRefund(command.sagaId(), command.reservationId(), command.refundAmount());

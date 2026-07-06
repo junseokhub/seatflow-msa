@@ -32,8 +32,8 @@ public class ReservationConfirmedEventConsumer {
                     message, new TypeReference<EventEnvelope<ReservationConfirmedEvent>>() {});
             payload = event.payload();
         } catch (Exception e) {
-            log.error("Malformed reservation.confirmed skipped: {}", e.getMessage(), e);
-            return;
+            log.error("Malformed reservation.confirmed: {}", e.getMessage());
+            throw new IllegalStateException("Malformed reservation.confirmed", e);
         }
 
         seatService.reserveSeat(payload.showId(), payload.seatId(), payload.userId());

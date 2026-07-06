@@ -29,8 +29,8 @@ public class ShowCreatedEventConsumer {
                     message, new TypeReference<EventEnvelope<ShowCreatedEvent>>() {
                     });
         } catch (Exception e) {
-            log.error("Malformed event skipped: {}", e.getMessage(), e);
-            return;   // 깨진 메시지(poison) → 스킵
+            log.error("Malformed show.created: {}", e.getMessage());
+            throw new IllegalStateException("Malformed show.created", e);
         }
 
         seatGenerationService.createSeats(event.payload());

@@ -30,8 +30,10 @@ public class UserRegisteredEventConsumer {
                     message, new TypeReference<EventEnvelope<UserRegisteredEvent>>() {
                     });
         } catch (Exception e) {
-            log.error("Malformed event skipped: {}", e.getMessage(), e);
-            return;   // 깨진 메시지(poison) → 스킵
+            log.error("Malformed user.registered: {}", e.getMessage());
+            throw new IllegalStateException("Malformed user.registered", e);
+//            log.error("Malformed event skipped: {}", e.getMessage(), e);
+//            return;   // 깨진 메시지(poison) → 스킵
         }
 
         // 멱등 처리는 createUser(REQUIRES_NEW + 충돌 무시)가 담당. 컨슈머는 위임만 한다.
