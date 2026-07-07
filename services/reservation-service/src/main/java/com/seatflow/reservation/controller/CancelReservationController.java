@@ -4,6 +4,7 @@ import com.seatflow.common.response.ApiResponse;
 import com.seatflow.reservation.service.CancelSagaOrchestrator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -20,7 +21,8 @@ public class CancelReservationController {
     @PostMapping("/api/reservations/{id}/cancel")
     public ResponseEntity<ApiResponse<Void>> cancel(
             @PathVariable Long id,
-            @RequestHeader("X-User-Id") String userId) {
+            Authentication authentication) {
+        String userId = authentication.getName();
         cancelSagaOrchestrator.startCancellation(id, userId);
         return ResponseEntity.accepted().body(ApiResponse.ok(null));
     }

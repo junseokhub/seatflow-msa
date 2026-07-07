@@ -8,6 +8,7 @@ import com.seatflow.seat.sse.SeatEmitterStore;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -35,7 +36,8 @@ public class SeatController {
     public ResponseEntity<ApiResponse<Void>> holdSeats(
             @PathVariable String showId,
             @RequestBody HoldSeatsRequest request,
-            @RequestHeader("X-User-Id") String userId) {
+            Authentication authentication) {
+        String userId = authentication.getName();
         seatService.holdSeats(showId, request.seatIds(), userId);
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
@@ -44,7 +46,8 @@ public class SeatController {
     public ResponseEntity<ApiResponse<Void>> releaseSeat(
             @PathVariable String showId,
             @PathVariable Long seatId,
-            @RequestHeader("X-User-Id") String userId) {
+            Authentication authentication) {
+        String userId = authentication.getName();
         seatService.releaseSeat(showId, seatId, userId);
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
