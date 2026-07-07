@@ -7,6 +7,7 @@ val springCloudVersion = "2025.0.0"
 dependencies {
 	implementation(project(":libs:common-web"))
 	implementation(project(":libs:common-kafka"))
+	implementation(project(":libs:common-jwt"))
 	implementation(project(":libs:common-outbox-jpa"))
 	implementation(project(":libs:common-redis"))
 	implementation("org.springframework.boot:spring-boot-starter-actuator")

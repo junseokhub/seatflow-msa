@@ -1,33 +1,31 @@
 package com.seatflow.common.security;
 
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 
 /**
- * 모든 서비스가 공유하는 기본 Security 설정. JWT 필터를 등록하고, 세션을 안 쓰는
- * STATELESS 정책으로 둔다(토큰 기반 인증이라 서버가 세션 상태를 들고 있을 필요가 없다).
+ * 이 모듈(common-jwt)만 의존성에 추가하면 서비스는 별도 설정 없이 JWT 검증
+ * 빈이 자동으로 뜬다(META-INF/spring/AutoConfiguration.imports로 등록).
+ * common-outbox-jpa와 동일한 패턴이다 — 컴포넌트 스캔 범위에 기대지 않고
+ * 명시적으로 자동 설정을 등록해, 서비스의 스캔 설정과 무관하게 항상 적용되게 한다.
  *
- * 경로별 인가 규칙(어떤 API가 인증/특정 권한을 요구하는지)은 서비스마다 다르므로
- * 여기서 강제하지 않는다. 각 서비스가 이 설정을 상속하거나 참고해 자기 SecurityConfig를
- * 둔다. 공통화하는 건 "JWT를 어떻게 검증해 인증 컨텍스트를 채우는가"까지다.
+ * 경로별 인가 규칙(authorizeHttpRequests)은 서비스마다 다르므로 여기서 강제하지
+ * 않는다. 각 서비스가 자기 SecurityConfig에서 이 필터를 가져다 쓴다.
  */
-@EnableWebSecurity
+@AutoConfiguration
+@EnableConfigurationProperties(JwtProperties.class)
 public class CommonSecurityConfig {
 
     @Bean
-    @ConditionalOnMissingBean(JwtVerificationProperties.class)
-    public JwtVerificationProperties jwtVerificationProperties() {
-        return new JwtVerificationProperties();
-    }
-
-    @Bean
     @ConditionalOnMissingBean(JwtValidator.class)
-    public JwtValidator jwtValidator(JwtVerificationProperties properties) {
+    public JwtValidator jwtValidator(JwtProperties properties) {
         return new JwtValidator(properties);
     }
 
     @Bean
+    @ConditionalOnMissingBean(JwtAuthenticationFilter.class)
     public JwtAuthenticationFilter jwtAuthenticationFilter(JwtValidator jwtValidator) {
         return new JwtAuthenticationFilter(jwtValidator);
     }
