@@ -5,6 +5,7 @@ plugins {
 dependencies {
 	implementation(project(":libs:common-web"))
 	implementation(project(":libs:common-kafka"))
+	implementation(project(":libs:common-jwt"))
 	implementation(project(":libs:common-redis"))
 	implementation(project(":libs:common-outbox-jpa"))
 	implementation("org.springframework.boot:spring-boot-starter-actuator")

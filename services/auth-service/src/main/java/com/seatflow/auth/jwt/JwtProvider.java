@@ -3,6 +3,7 @@ package com.seatflow.auth.jwt;
 import com.seatflow.auth.config.properties.JwtProperties;
 import com.seatflow.auth.exception.AuthErrorCode;
 import com.seatflow.common.exception.BusinessException;
+import com.seatflow.common.security.JwtValidator;
 import com.seatflow.common.security.Role;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -11,17 +12,20 @@ import org.springframework.stereotype.Component;
 
 import java.security.KeyFactory;
 import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.Date;
 
+/**
+ * 발급 전용. private key로 서명하는 것만 담당한다.
+ * 검증(getClaims)은 common-jwt의 JwtValidator에 위임한다.
+ */
 @Component
 @RequiredArgsConstructor
 public class JwtProvider {
 
     private final JwtProperties jwtProperties;
+    private final JwtValidator jwtValidator;
 
     public String generateAccessToken(String userId, String email, Role role) {
         return Jwts.builder()
@@ -46,11 +50,7 @@ public class JwtProvider {
     }
 
     public Claims getClaims(String token) {
-        return Jwts.parser()
-                .verifyWith(getPublicKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+        return jwtValidator.validate(token);
     }
 
     public long getRemaining(String token) {
@@ -66,23 +66,6 @@ public class JwtProvider {
             byte[] decoded = Base64.getDecoder().decode(pem);
             return KeyFactory.getInstance("RSA")
                     .generatePrivate(new PKCS8EncodedKeySpec(decoded));
-        } catch (Exception e) {
-            throw new BusinessException(
-                    AuthErrorCode.INVALID_TOKEN.getStatus().value(),
-                    AuthErrorCode.INVALID_TOKEN.getMessage()
-            );
-        }
-    }
-
-    private PublicKey getPublicKey() {
-        try {
-            String pem = jwtProperties.getPublicKey()
-                    .replace("-----BEGIN PUBLIC KEY-----", "")
-                    .replace("-----END PUBLIC KEY-----", "")
-                    .replaceAll("\\s", "");
-            byte[] decoded = Base64.getDecoder().decode(pem);
-            return KeyFactory.getInstance("RSA")
-                    .generatePublic(new X509EncodedKeySpec(decoded));
         } catch (Exception e) {
             throw new BusinessException(
                     AuthErrorCode.INVALID_TOKEN.getStatus().value(),

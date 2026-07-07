@@ -13,6 +13,7 @@ include(
     "libs:common-events",
     "libs:common-kafka",
     "libs:common-redis",
+    "libs:common-jwt",
     "libs:common-outbox-jpa",
     "services:auth-service",
     "services:user-service",

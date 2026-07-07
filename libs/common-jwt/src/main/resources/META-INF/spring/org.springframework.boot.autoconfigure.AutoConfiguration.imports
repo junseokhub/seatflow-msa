@@ -1,1 +1,1 @@
-com.seatflow.common.kafka.config.CommonKafkaAutoConfiguration
+com.seatflow.common.security.CommonSecurityConfig
