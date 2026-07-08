@@ -37,6 +37,8 @@ public class OutboxScheduler {
             List<Outbox> batch = outboxStore.claimPending(BATCH_SIZE);
             for (Outbox message : batch) {
                 try {
+                    log.info("Outbox Scheduler");
+                    log.info("Publishing outbox message: {}", message);
                     kafkaTemplate.send(message.getEventType(),
                             message.getMessageKey(), message.getPayload()).get();
                     outboxStore.markPublished(message.getId());
