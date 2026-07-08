@@ -144,7 +144,10 @@ public class AuthService {
         }
 
         var claims = jwtProvider.getClaims(accessToken);
-        return new ValidateResult(claims.getSubject(), (String) claims.get("email"), claims.get("role", Role.class));
+        String email = claims.get("email", String.class);
+        Role role = Role.valueOf(claims.get("role", String.class));
+
+        return new ValidateResult(claims.getSubject(), email, role);
     }
 
     public record TokenResult(String accessToken, String refreshToken) {}
