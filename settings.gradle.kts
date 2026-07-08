@@ -17,6 +17,7 @@ include(
     "libs:common-outbox-jpa",
     "services:auth-service",
     "services:user-service",
+    "services:coupon-service",
     "services:reservation-service",
     "services:seat-service",
     "services:payment-service",
