@@ -1,0 +1,37 @@
+# Gradle
+.gradle/
+build/
+!build/libs/
+*.gradle
+*.gradle.kts
+gradlew
+gradlew.bat
+gradle/
+
+# Source
+src/
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Test
+**/test/
+
+# Docs
+*.md
+docs/
+
+# CI
+Jenkinsfile
+.github/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
