@@ -17,7 +17,7 @@ import java.math.BigDecimal;
 public interface ReservationClient {
 
     @GetMapping("/api/reservations/{id}")
-    ApiResponse<ReservationView> getReservation(@PathVariable("id") Long id);
+    ApiResponse<ReservationView> getReservation(@PathVariable Long id);
 
     record ReservationView(Long id, String userId, String status, BigDecimal amount) {}
 
