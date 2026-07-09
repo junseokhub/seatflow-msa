@@ -119,11 +119,16 @@ public class CancelSagaOrchestrator {
         log.info("Cancel saga: seat released, refund command sent: sagaId={}", sagaId);
     }
 
+
+    // CancelSagaOrchestrator.onPaymentRefunded — 원본(12편)으로 복구.
+    // 쿠폰 복원은 payment-service의 executeRefund가 이미 처리했으므로,
+    // reservation은 couponClient를 가질 필요가 없다. 파라미터도 2개(sagaId, reservationId) 그대로.
+
     /**
      * 환불 완료 응답 처리(payment.refunded 컨슈머가 호출). Saga 최종 완료.
      */
     @Transactional
-    public void onPaymentRefunded(Long sagaId, Long reservationId, Long couponId) {
+    public void onPaymentRefunded(Long sagaId, Long reservationId) {
         CancelSaga saga = cancelSagaRepository.findById(sagaId).orElse(null);
         if (saga == null) {
             log.warn("CancelSaga not found for payment.refunded, skip: sagaId={}", sagaId);
@@ -136,17 +141,6 @@ public class CancelSagaOrchestrator {
         }
 
         saga.markRefunded();
-        if (couponId != null) {
-            // 환불이 이미 끝난 뒤라 쿠폰 복원 실패가 Saga 전체를 막으면 안 된다.
-            // 13편의 원칙과 동일 — 여기서 실패하면 로그로 남기고 운영에서 수동 처리.
-            try {
-                couponClient.restoreCoupon(reservationId);
-            } catch (Exception e) {
-                log.error("Coupon restore failed, needs manual recovery: reservationId={}, couponId={}",
-                        reservationId, couponId, e);
-            }
-        }
-
         saga.markCompleted();
 
         Reservation reservation = reservationRepository.findById(reservationId).orElse(null);
@@ -156,6 +150,7 @@ public class CancelSagaOrchestrator {
 
         log.info("Cancel saga completed: sagaId={}, reservationId={}", sagaId, reservationId);
     }
+
 
     /**
      * 환불 실패 응답 처리(payment.refund.failed 컨슈머가 호출).
