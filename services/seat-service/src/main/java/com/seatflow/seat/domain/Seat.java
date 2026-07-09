@@ -47,6 +47,10 @@ public class Seat {
     @Column(nullable = false)
     private int price;
 
+    private Integer posX;
+
+    private Integer posY;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

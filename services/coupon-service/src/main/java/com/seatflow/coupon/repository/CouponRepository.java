@@ -1,0 +1,20 @@
+package com.seatflow.coupon.repository;
+
+import com.seatflow.coupon.domain.Coupon;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface CouponRepository extends JpaRepository<Coupon, Long> {
+
+    boolean existsByCampaignIdAndUserId(Long campaignId, String userId);
+
+    Optional<Coupon> findById(Long id);
+
+    Optional<Coupon> findByIdAndUserId(Long id, String userId);
+
+    List<Coupon> findByUserId(String userId);
+
+    Optional<Coupon> findByReservationId(Long reservationId);
+}

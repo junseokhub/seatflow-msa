@@ -26,6 +26,7 @@ public class PaymentController {
     /**
      * 결제 요청. Idempotency-Key 헤더로 광클·재시도를 멱등 처리한다(1층).
      * userId는 더 이상 클라이언트가 보내는 값이 아니라, 검증된 토큰의 주체다.
+     * couponId가 있으면(쿠폰함에서 선택) 할인이 적용된 최종 금액으로 결제된다.
      */
     @PostMapping
     public ResponseEntity<ApiResponse<PaymentResponse>> processPayment(
@@ -40,11 +41,13 @@ public class PaymentController {
                                 request.reservationId(),
                                 userId,
                                 request.amount(),
-                                request.paymentMethod()
+                                request.paymentMethod(),
+                                request.couponId()
                         )
                 ))
         ));
     }
+
 
     /**
      * 결제 조회. 본인 결제만 볼 수 있다 — id만 알면 남의 결제 내역(금액, 결제수단)을

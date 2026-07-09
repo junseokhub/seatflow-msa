@@ -16,6 +16,7 @@ public enum PaymentErrorCode {
     AMOUNT_MISMATCH(HttpStatus.BAD_REQUEST, "결제 금액이 예매 금액과 일치하지 않습니다."),
     DUPLICATE_REQUEST(HttpStatus.CONFLICT, "이미 처리 중이거나 처리된 결제 요청입니다."),
     PAYMENT_NOT_OWNED(HttpStatus.FORBIDDEN, "본인 결제가 아닙니다."),
+    COUPON_INVALID(HttpStatus.BAD_REQUEST, "사용할 수 없는 쿠폰입니다."),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "결제 처리 중 오류가 발생했습니다.");
 
     private final HttpStatus status;
