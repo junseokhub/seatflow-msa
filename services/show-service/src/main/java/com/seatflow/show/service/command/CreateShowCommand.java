@@ -1,6 +1,5 @@
 package com.seatflow.show.service.command;
 
-import com.seatflow.show.domain.SeatGrade;
 import com.seatflow.show.dto.ShowRequest;
 
 import java.time.LocalDateTime;
@@ -10,7 +9,7 @@ public record CreateShowCommand(
         String title,
         String venue,
         LocalDateTime showDate,
-        List<SeatGrade> seatGrades
+        List<ShowRequest.SeatGradeRequest> seatGrades
 ) {
     public static CreateShowCommand from(ShowRequest request) {
         return new CreateShowCommand(
