@@ -16,7 +16,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 		"com.seatflow.payment.repository",
 		"com.seatflow.common.outbox.jpa"
 })
-@EnableFeignClients
+@EnableFeignClients(basePackages = "com.seatflow.common.client")
 @EnableScheduling
 public class PaymentServiceApplication {
 
