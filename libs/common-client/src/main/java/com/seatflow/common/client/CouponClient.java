@@ -14,17 +14,17 @@ public interface CouponClient {
 
     @PostMapping("/internal/coupons/{couponId}/validate")
     ApiResponse<CouponValidationView> validateCoupon(
-            @PathVariable Long couponId,
-            @RequestParam String userId);
+            @PathVariable("couponId") Long couponId,
+            @RequestParam("userId") String userId);
 
     @PostMapping("/internal/coupons/{couponId}/confirm")
     ApiResponse<Void> confirmCoupon(
-            @PathVariable Long couponId,
-            @RequestParam String userId,
-            @RequestParam Long reservationId);
+            @PathVariable("couponId") Long couponId,
+            @RequestParam("userId") String userId,
+            @RequestParam("reservationId") Long reservationId);
 
     @PostMapping("/internal/coupons/reservations/{reservationId}/restore")
-    ApiResponse<Void> restoreCoupon(@PathVariable Long reservationId);
+    ApiResponse<Void> restoreCoupon(@PathVariable("reservationId") Long reservationId);
 
     record CouponValidationView(Long couponId, boolean valid, BigDecimal discountAmount) {}
 
