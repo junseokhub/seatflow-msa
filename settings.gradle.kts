@@ -16,6 +16,7 @@ include(
     "libs:common-jwt",
     "libs:common-client",
     "libs:common-outbox-jpa",
+    "libs:common-test-support",
     "services:auth-service",
     "services:user-service",
     "services:coupon-service",
