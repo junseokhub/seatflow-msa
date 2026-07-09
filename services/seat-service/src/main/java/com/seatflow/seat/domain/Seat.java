@@ -47,8 +47,10 @@ public class Seat {
     @Column(nullable = false)
     private int price;
 
+    @Column(name = "pos_x")
     private Integer posX;
 
+    @Column(name = "pos_y")
     private Integer posY;
 
     @Column(nullable = false, updatable = false)
