@@ -10,7 +10,7 @@ import java.util.List;
 public record ShowRequest(
         @NotBlank String title,
         @NotBlank String venue,
-        @NotNull @Future LocalDateTime showDate,   // 과거 날짜로 공연 생성 방지
+        @NotNull @Future LocalDateTime showDate,
         @NotEmpty @Valid List<SeatGradeRequest> seatGrades
 ) {
     public record SeatGradeRequest(
