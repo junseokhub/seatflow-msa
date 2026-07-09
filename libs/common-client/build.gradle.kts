@@ -3,6 +3,10 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7"
 }
 
+tasks.withType<JavaCompile> {
+    options.compilerArgs.add("-parameters")
+}
+
 dependencyManagement {
     imports {
         // Spring Boot 3.5.x와 호환되는 Spring Cloud 버전.
