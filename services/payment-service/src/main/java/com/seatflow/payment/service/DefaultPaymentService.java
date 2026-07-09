@@ -1,15 +1,15 @@
 package com.seatflow.payment.service;
 
+import com.seatflow.common.client.CouponClient;
+import com.seatflow.common.client.ReservationClient;
 import com.seatflow.common.event.EventTopic;
 import com.seatflow.common.event.payment.PaymentCompletedEvent;
 import com.seatflow.common.event.payment.PaymentFailedEvent;
 import com.seatflow.common.event.payment.PaymentRefundFailedEvent;
 import com.seatflow.common.event.payment.PaymentRefundedEvent;
+import com.seatflow.common.client.ReservationClient.ReservationView;
 import com.seatflow.common.exception.BusinessException;
 import com.seatflow.common.outbox.jpa.OutboxAppender;
-import com.seatflow.payment.client.CouponClient;
-import com.seatflow.payment.client.ReservationClient;
-import com.seatflow.payment.client.ReservationView;
 import com.seatflow.payment.domain.Payment;
 import com.seatflow.payment.domain.PaymentStatus;
 import com.seatflow.payment.exception.PaymentErrorCode;

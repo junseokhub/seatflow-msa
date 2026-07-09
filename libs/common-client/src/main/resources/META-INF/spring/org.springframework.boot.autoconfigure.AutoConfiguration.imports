@@ -1,0 +1,2 @@
+com.seatflow.common.client.FeignAuthConfig
+com.seatflow.common.client.CircuitBreakerConfig
