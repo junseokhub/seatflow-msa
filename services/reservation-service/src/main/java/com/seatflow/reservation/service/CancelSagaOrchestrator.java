@@ -8,6 +8,7 @@ import com.seatflow.common.exception.BusinessException;
 import com.seatflow.common.outbox.jpa.OutboxAppender;
 import com.seatflow.reservation.domain.CancelSaga;
 import com.seatflow.reservation.domain.Reservation;
+import com.seatflow.reservation.domain.ReservationStatus;
 import com.seatflow.reservation.exception.ReservationErrorCode;
 import com.seatflow.reservation.repository.CancelSagaRepository;
 import com.seatflow.reservation.repository.ReservationRepository;
@@ -42,12 +43,12 @@ public class CancelSagaOrchestrator {
     private final OutboxAppender outboxAppender;
 
     /**
-     * 취소 시작. 컨트롤러(방아쇠)가 호출한다.
-     * 취소 가능 여부(마감일)를 확인하고, 수수료 반영 환불액을 계산해 CancelSaga를 만든 뒤
-     * 좌석 반환 명령을 발행한다.
+     * 취소 진입점. PENDING/CONFIRMED 모두 여기서 받아 분기한다.
      *
-     * 멱등성: 같은 예매로 취소를 두 번 눌러도 CancelSagaRepository의 reservationId unique가
-     * 두 번째 시도를 막는다(이미 Saga가 진행 중이거나 끝났다는 뜻이므로).
+     * PENDING  → 결제 없음. Saga 없이 즉시 CANCELLED + 좌석 반환 명령만 발행(동기 완료).
+     * CONFIRMED → 기존 Saga 흐름. 좌석 반환 → 환불 → 완료(비동기).
+     *
+     * 멱등성(CONFIRMED): CancelSaga.reservationId unique 제약이 중복 요청을 막는다.
      */
     @Transactional
     public void startCancellation(Long reservationId, String userId) {
@@ -60,6 +61,17 @@ public class CancelSagaOrchestrator {
             throw new BusinessException(
                     ReservationErrorCode.RESERVATION_NOT_OWNED.getStatus().value(),
                     ReservationErrorCode.RESERVATION_NOT_OWNED.getMessage());
+        }
+
+        if (reservation.getStatus() == ReservationStatus.PENDING) {
+            cancelPendingReservation(reservation);
+            return;
+        }
+
+        if (reservation.getStatus() != ReservationStatus.CONFIRMED) {
+            throw new BusinessException(
+                    ReservationErrorCode.CANCELLATION_ALREADY_IN_PROGRESS.getStatus().value(),
+                    ReservationErrorCode.CANCELLATION_ALREADY_IN_PROGRESS.getMessage());
         }
 
         if (cancelSagaRepository.findByReservationId(reservationId).isPresent()) {
@@ -77,7 +89,7 @@ public class CancelSagaOrchestrator {
         BigDecimal refundAmount = CancellationPolicy.calculateRefund(
                 reservation.getAmount(), reservation.getShowDate(), now);
 
-        reservation.startCancelling();   // CONFIRMED → CANCELLING (CONFIRMED 아니면 예외)
+        reservation.startCancelling();
 
         CancelSaga saga = cancelSagaRepository.save(CancelSaga.builder()
                 .reservationId(reservationId)
@@ -92,6 +104,21 @@ public class CancelSagaOrchestrator {
 
         log.info("Cancel saga started: sagaId={}, reservationId={}, refundAmount={}",
                 saga.getId(), reservationId, refundAmount);
+    }
+
+    /**
+     * 결제 전 취소. 환불 없음 → Saga 없이 즉시 CANCELLED + 좌석 반환 명령 발행.
+     * sagaId=null이므로 seat.released가 돌아와도 오케스트레이터는 경고 로그만 남기고 스킵한다.
+     */
+    private void cancelPendingReservation(Reservation reservation) {
+        reservation.cancelPending();
+
+        outboxAppender.append(EventTopic.SEAT_RELEASE_COMMAND, SOURCE,
+                String.valueOf(reservation.getSeatId()),
+                new SeatReleaseCommand(null, reservation.getId(), reservation.getShowId(), reservation.getSeatId()));
+
+        log.info("Pending reservation cancelled directly (no payment to refund): reservationId={}",
+                reservation.getId());
     }
 
     /**

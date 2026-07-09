@@ -25,6 +25,19 @@ public class CouponService {
     private final CouponCampaignRepository campaignRepository;
     private final CouponRepository couponRepository;
 
+    @Transactional(readOnly = true)
+    public List<CouponCampaign> getCampaigns() {
+        return campaignRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public CouponCampaign getCampaign(Long id) {
+        return campaignRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(
+                        CouponErrorCode.CAMPAIGN_NOT_FOUND.getStatus().value(),
+                        CouponErrorCode.CAMPAIGN_NOT_FOUND.getMessage()));
+    }
+
     /**
      * 관리자가 선착순 발급 캠페인을 만든다. 인가(@PreAuthorize)는 컨트롤러에서 처리한다.
      */

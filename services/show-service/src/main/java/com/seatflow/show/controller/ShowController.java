@@ -3,6 +3,7 @@ package com.seatflow.show.controller;
 import com.seatflow.common.response.ApiResponse;
 import com.seatflow.show.dto.ShowRequest;
 import com.seatflow.show.dto.ShowResponse;
+import com.seatflow.show.dto.UpdateShowRequest;
 import com.seatflow.show.service.ShowService;
 import com.seatflow.show.service.command.CreateShowCommand;
 import jakarta.validation.Valid;
@@ -45,5 +46,22 @@ public class ShowController {
         return ResponseEntity.ok(ApiResponse.ok(
                 ShowResponse.from(showService.createShow(CreateShowCommand.from(request)))
         ));
+    }
+
+    @PatchMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<ShowResponse>> updateShow(
+            @PathVariable String id,
+            @RequestBody UpdateShowRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                ShowResponse.from(showService.updateShow(id, request.title(), request.venue(), request.showDate()))
+        ));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deleteShow(@PathVariable String id) {
+        showService.deleteShow(id);
+        return ResponseEntity.ok(ApiResponse.ok(null));
     }
 }

@@ -104,6 +104,17 @@ public class Reservation {
 
 
     /**
+     * 결제 전 즉시 취소(PENDING → CANCELLED). Saga 없이 직접 확정한다.
+     */
+    public void cancelPending() {
+        if (this.status != ReservationStatus.PENDING) {
+            throw new IllegalStateException(
+                    "결제 대기 상태만 이 방식으로 취소할 수 있다: status=" + status);
+        }
+        this.status = ReservationStatus.CANCELLED;
+    }
+
+    /**
      * 취소 Saga 보상 완료로 예매를 원상복구한다(CANCELLING → CONFIRMED).
      * 환불이 실패해 좌석을 다시 점유시켰으니, 예매도 확정 상태로 되돌린다.
      * CANCELLING이 아니면(이미 처리된 중복 호출) 조용히 무시한다.

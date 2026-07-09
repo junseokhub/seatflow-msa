@@ -10,7 +10,9 @@ public record SeatResponse(
         String seatRow,
         int number,
         SeatStatus status,
-        int price
+        int price,
+        Integer posX,
+        Integer posY
 ) {
     public static SeatResponse from(Seat seat) {
         return new SeatResponse(
@@ -20,7 +22,9 @@ public record SeatResponse(
                 seat.getSeatRow(),
                 seat.getNumber(),
                 seat.getStatus(),
-                seat.getPrice()
+                seat.getPrice(),
+                seat.getPosX(),
+                seat.getPosY()
         );
     }
 }
