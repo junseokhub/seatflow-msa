@@ -1,5 +1,7 @@
 package com.seatflow.show.service.command;
 
+import com.seatflow.common.event.show.SeatGradeType;
+import com.seatflow.show.domain.SeatGrade;
 import com.seatflow.show.dto.ShowRequest;
 
 import java.time.LocalDateTime;
@@ -9,14 +11,19 @@ public record CreateShowCommand(
         String title,
         String venue,
         LocalDateTime showDate,
-        List<ShowRequest.SeatGradeRequest> seatGrades
+        List<SeatGrade> seatGrades
 ) {
     public static CreateShowCommand from(ShowRequest request) {
         return new CreateShowCommand(
                 request.title(),
                 request.venue(),
                 request.showDate(),
-                request.seatGrades()
+                request.seatGrades().stream()
+                        .map(g -> new SeatGrade(
+                                SeatGradeType.valueOf(g.grade()),
+                                g.capacity(),
+                                g.price()))
+                        .toList()
         );
     }
 }
