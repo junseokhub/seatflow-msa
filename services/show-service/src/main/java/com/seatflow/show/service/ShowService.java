@@ -47,7 +47,6 @@ public class ShowService {
      */
     @Transactional
     public Show createShow(CreateShowCommand command) {
-        // 1) 공연 저장
         Show show = Show.builder()
                 .title(command.title())
                 .venue(command.venue())
@@ -57,7 +56,6 @@ public class ShowService {
                 .build();
         showRepository.save(show);
 
-        // 2) show.created 이벤트를 Outbox에 적재 (같은 트랜잭션)
         ShowCreatedEvent event = toEvent(show);
         EventEnvelope<ShowCreatedEvent> envelope = EventEnvelope.of(
                 EventTopic.SHOW_CREATED, SOURCE, event);
@@ -65,18 +63,36 @@ public class ShowService {
         outboxRepository.save(Outbox.builder()
                 .eventId(envelope.eventId())
                 .eventType(EventTopic.SHOW_CREATED)
-                .messageKey(show.getId())          // 같은 공연 이벤트는 같은 파티션으로
+                .messageKey(show.getId())
                 .payload(toJson(envelope))
                 .build());
 
         return show;
     }
 
-    /** 도메인(SeatGrade) → 이벤트 계약(ShowCreatedEvent.GradeSpec) 변환 */
+    /** 제목·공연장·공연일 수정 (null 필드는 기존 값 유지). seatGrades는 변경 불가. */
+    @Transactional
+    public Show updateShow(String id, String title, String venue, LocalDateTime showDate) {
+        Show show = getShow(id);
+        show.update(title, venue, showDate);
+        return showRepository.save(show);
+    }
+
+    /** 공연 삭제. 좌석은 seat-service가 별도 관리하므로 여기서는 show 문서만 제거한다. */
+    @Transactional
+    public void deleteShow(String id) {
+        if (!showRepository.existsById(id)) {
+            throw new BusinessException(
+                    ShowErrorCode.SHOW_NOT_FOUND.getStatus().value(),
+                    ShowErrorCode.SHOW_NOT_FOUND.getMessage());
+        }
+        showRepository.deleteById(id);
+    }
+
     private ShowCreatedEvent toEvent(Show show) {
         List<ShowCreatedEvent.GradeSpec> grades = show.getSeatGrades().stream()
                 .map(g -> new ShowCreatedEvent.GradeSpec(
-                        g.grade(),          // 도메인·이벤트가 같은 SeatGradeType enum 공유
+                        g.grade(),
                         g.capacity(),
                         g.price()))
                 .toList();

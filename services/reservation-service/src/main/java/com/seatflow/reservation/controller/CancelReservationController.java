@@ -8,9 +8,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * 취소 요청 진입점. Saga의 방아쇠만 당긴다(시작 명령만 발행하고 바로 응답).
- * 실제 취소 완료는 비동기로 진행되므로, 이 응답은 "취소가 시작됐다"를 의미하지
- * "취소가 끝났다"를 의미하지 않는다. 최종 상태는 예매 조회(GET)로 확인한다.
+ * 취소 요청 진입점. PENDING/CONFIRMED 분기는 CancelSagaOrchestrator가 담당한다.
+ * PENDING 동기 완료 → 200 OK, CONFIRMED 비동기 Saga 시작 → 202 Accepted는
+ * 오케스트레이터가 반환 값 없이 처리하므로 컨트롤러는 항상 202를 반환한다.
+ * (PENDING 취소는 즉시 완료지만 클라이언트는 마이페이지로 이동하면 확인 가능)
  */
 @RestController
 @RequiredArgsConstructor
@@ -22,8 +23,7 @@ public class CancelReservationController {
     public ResponseEntity<ApiResponse<Void>> cancel(
             @PathVariable Long id,
             Authentication authentication) {
-        String userId = authentication.getName();
-        cancelSagaOrchestrator.startCancellation(id, userId);
+        cancelSagaOrchestrator.startCancellation(id, authentication.getName());
         return ResponseEntity.accepted().body(ApiResponse.ok(null));
     }
 }

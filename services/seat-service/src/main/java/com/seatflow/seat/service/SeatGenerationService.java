@@ -14,25 +14,25 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-
 /**
  * show.created를 받아 등급별 좌석을 생성한다.
  *
- * 멱등성: 같은 show.created가 중복 도착해도 (show_id, section, number) unique 제약이 막는다.
- * 좌석 생성은 배치(saveAll) INSERT이고, 공연당 한 번만 일어나는 저빈도 작업이다.
- * 그래서 커넥션을 하나 더 쓰는 부담(REQUIRES_NEW)이 실질적으로 문제되지 않고,
- * 오히려 배치 충돌을 독립 트랜잭션으로 통째로 격리하는 편이 안전하다.
- * 충돌이 나면 이 트랜잭션만 롤백되고 호출자(컨슈머)의 트랜잭션은 오염되지 않는다.
+ * 좌석 배치:
+ *   - 등급(VIP/R/S)이 section이 된다.
+ *   - 등급 내 좌석을 SEATS_PER_ROW씩 끊어 행(A/B/C…)을 만든다.
+ *   - seatRow: 행 레이블(A, B, ..., Z, AA, AB, ...)
+ *   - number: 행 안에서의 열 번호(1 ~ SEATS_PER_ROW)
+ *   - posX: 열 인덱스(0-base), posY: 공연 전체 기준 행 인덱스(0-base, 등급별 gap 포함)
  *
- * (회원가입 createUser는 고빈도 단건이라 noRollbackFor + saveAndFlush로 커넥션을 아낀다.
- *  연산의 빈도와 배치 여부에 따라 멱등성 방식을 다르게 택한다.)
+ * 멱등성: (show_id, section, number) unique 제약이 중복 이벤트를 막는다.
  */
-
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class SeatGenerationService {
+
+    private static final int SEATS_PER_ROW = 20;
+    private static final int SECTION_GAP   = 2; // 등급 간 빈 행 수
 
     private final SeatRepository seatRepository;
 
@@ -45,8 +45,6 @@ public class SeatGenerationService {
             seatRepository.saveAll(seats);
             log.info("Seats created: showId={}, count={}", showId, seats.size());
         } catch (DataIntegrityViolationException e) {
-            // (show_id, section, number) unique 충돌 = 이미 생성된 공연(중복 이벤트) → 무시.
-            // 그 외 정합성 위반(NOT NULL 등)은 재던져 롤백을 유도한다.
             Throwable cause = e.getRootCause();
             if (cause instanceof SQLException sqlEx && sqlEx.getErrorCode() == 1062) {
                 log.info("Seats already exist for show, skip (duplicate event): showId={}", showId);
@@ -58,19 +56,48 @@ public class SeatGenerationService {
 
     private List<Seat> buildSeats(ShowCreatedEvent event) {
         List<Seat> seats = new ArrayList<>();
+        int globalRow = 0; // 공연 전체 기준 행 Y 인덱스
+
         for (ShowCreatedEvent.GradeSpec grade : event.grades()) {
-            String section = grade.grade().name();
-            for (int number = 1; number <= grade.capacity(); number++) {
-                seats.add(Seat.builder()
-                        .showId(event.showId())
-                        .showDate(event.showDate())
-                        .section(section)
-                        .seatRow(section)
-                        .number(number)
-                        .price(grade.price().intValue())
-                        .build());
+            String section = grade.grade().name(); // "VIP", "R", "S"
+            int capacity   = grade.capacity();
+            int price      = grade.price().intValue();
+            int totalRows  = (int) Math.ceil((double) capacity / SEATS_PER_ROW);
+
+            for (int rowIdx = 0; rowIdx < totalRows; rowIdx++) {
+                String seatRow    = rowLabel(rowIdx);
+                int seatsInRow    = (rowIdx < totalRows - 1)
+                        ? SEATS_PER_ROW
+                        : capacity - rowIdx * SEATS_PER_ROW; // 마지막 행 나머지
+                int posY = globalRow + rowIdx;
+
+                for (int col = 0; col < seatsInRow; col++) {
+                    int seatNumber = rowIdx * SEATS_PER_ROW + col + 1; // 1-base 전체 번호
+                    seats.add(Seat.builder()
+                            .showId(event.showId())
+                            .showDate(event.showDate())
+                            .section(section)
+                            .seatRow(seatRow)
+                            .number(col + 1)  // 행 안에서 1-base 번호
+                            .price(price)
+                            .posX(col)
+                            .posY(posY)
+                            .build());
+                }
             }
+
+            globalRow += totalRows + SECTION_GAP;
         }
         return seats;
+    }
+
+    /** 행 인덱스(0-base) → 레이블: A, B, ..., Z, AA, AB, ... */
+    private static String rowLabel(int idx) {
+        StringBuilder sb = new StringBuilder();
+        do {
+            sb.insert(0, (char) ('A' + idx % 26));
+            idx = idx / 26 - 1;
+        } while (idx >= 0);
+        return sb.toString();
     }
 }

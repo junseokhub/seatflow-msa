@@ -41,4 +41,11 @@ public class Show {
     public int totalSeats() {
         return seatGrades.stream().mapToInt(SeatGrade::capacity).sum();
     }
+
+    /** 제목·공연장·공연일만 수정 가능. null이면 기존 값 유지. */
+    public void update(String title, String venue, LocalDateTime showDate) {
+        if (title != null) this.title = title;
+        if (venue != null) this.venue = venue;
+        if (showDate != null) this.showDate = showDate;
+    }
 }
