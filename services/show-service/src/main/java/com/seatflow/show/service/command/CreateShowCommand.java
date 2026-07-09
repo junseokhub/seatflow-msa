@@ -1,6 +1,5 @@
 package com.seatflow.show.service.command;
 
-import com.seatflow.common.event.show.SeatGradeType;
 import com.seatflow.show.domain.SeatGrade;
 import com.seatflow.show.dto.ShowRequest;
 
@@ -19,10 +18,7 @@ public record CreateShowCommand(
                 request.venue(),
                 request.showDate(),
                 request.seatGrades().stream()
-                        .map(g -> new SeatGrade(
-                                SeatGradeType.valueOf(g.grade()),
-                                g.capacity(),
-                                g.price()))
+                        .map(g -> new SeatGrade(g.grade(), g.capacity(), g.price()))
                         .toList()
         );
     }
