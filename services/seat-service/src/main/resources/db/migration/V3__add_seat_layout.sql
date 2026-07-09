@@ -1,0 +1,3 @@
+ALTER TABLE seats
+    ADD COLUMN pos_x INT NULL,
+    ADD COLUMN pos_y INT NULL;

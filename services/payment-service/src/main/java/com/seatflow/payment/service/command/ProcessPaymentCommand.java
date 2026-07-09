@@ -8,5 +8,6 @@ public record ProcessPaymentCommand(
         Long reservationId,
         String userId,
         BigDecimal amount,
-        PaymentMethod paymentMethod
+        PaymentMethod paymentMethod,
+        Long couponId
 ) {}

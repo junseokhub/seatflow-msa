@@ -43,6 +43,9 @@ public class Payment {
     @Column(nullable = false)
     private PaymentStatus status;
 
+    private Long couponId;
+    private BigDecimal discountAmount;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -86,11 +89,13 @@ public class Payment {
     }
 
     @Builder
-    private Payment(Long reservationId, String userId, BigDecimal amount, PaymentMethod paymentMethod) {
+    private Payment(Long reservationId, String userId, BigDecimal amount, PaymentMethod paymentMethod, Long couponId, BigDecimal discountAmount) {
         this.paymentNumber = UUID.randomUUID().toString();
         this.reservationId = reservationId;
         this.userId = userId;
         this.amount = amount;
         this.paymentMethod = paymentMethod;
+        this.couponId = couponId;
+        this.discountAmount = discountAmount;
     }
 }

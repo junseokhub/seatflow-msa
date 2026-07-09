@@ -9,5 +9,6 @@ import java.math.BigDecimal;
 public record PaymentRequest(
         @NotNull Long reservationId,
         @NotNull @Positive BigDecimal amount,
-        @NotNull PaymentMethod paymentMethod
+        @NotNull PaymentMethod paymentMethod,
+        Long couponId
 ) {}
