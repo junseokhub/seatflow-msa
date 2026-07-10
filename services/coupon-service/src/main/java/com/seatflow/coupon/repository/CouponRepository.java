@@ -17,4 +17,7 @@ public interface CouponRepository extends JpaRepository<Coupon, Long> {
     List<Coupon> findByUserId(String userId);
 
     Optional<Coupon> findByReservationId(Long reservationId);
+
+    /** 정합성 점검(CouponStockReconciliationScheduler)이 캠페인별 실제 발급 수를 확인하는 데 쓴다. */
+    long countByCampaignId(Long campaignId);
 }

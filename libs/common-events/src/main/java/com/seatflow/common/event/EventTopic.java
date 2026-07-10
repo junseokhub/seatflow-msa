@@ -22,4 +22,6 @@ public final class EventTopic {
     public static final String PAYMENT_REFUND_COMMAND = "payment.refund.command";
     public static final String PAYMENT_REFUNDED = "payment.refunded";
     public static final String PAYMENT_REFUND_FAILED = "payment.refund.failed";
+
+    public static final String COUPON_ISSUED = "coupon.issued";
 }
