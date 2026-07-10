@@ -108,6 +108,9 @@ public class DefaultRedisCouponService implements CouponService {
 
         // Redis가 "확정된 당첨"이라고 판단한 요청만 여기 도달한다. MySQL 쓰기는
         // 서로 다른 row(사용자별 쿠폰 레코드)에 대한 단순 insert라 경쟁이 없다.
+        // 영구 확정되지 않고, MySQL 저장이 정상적으로 성공했어도 30초 후 마킹이 그냥
+        // 사라진다. 그러면 이미 발급받은 사용자의 자리가 "재발급 가능"으로 돌아가서
+        // 다른 사람이 같은 재고를 다시 가져갈 수 있는 심각한 버그가 된다.
         try {
             Coupon coupon = Coupon.builder()
                     .campaignId(campaignId)
@@ -117,14 +120,16 @@ public class DefaultRedisCouponService implements CouponService {
             couponRepository.save(coupon);
             couponRepository.flush();
 
+            // MySQL 저장 성공 확인 직후 Redis 마킹을 영구 확정한다. 이 줄 전에 예외가
+            // 나거나 서버가 죽으면 이 줄이 실행되지 않고, TTL이 알아서 마킹을 지운다
+            // (자동 복구) — CouponRedisProvider의 issue/confirmIssued 클래스 주석 참고.
+            couponRedisProvider.confirmIssued(campaignId, userId);
+
             outboxAppender.append(EventTopic.COUPON_ISSUED, SOURCE, userId,
                     new CouponIssuedEvent(coupon.getId(), campaignId, userId));
 
             return coupon;
         } catch (DataIntegrityViolationException e) {
-            // Redis가 이미 1인 1매를 막았으므로 정상 흐름에서는 도달하지 않는다.
-            // Redis/MySQL 상태가 어떤 이유로든 어긋난 경우에 대비한 방어 코드다 —
-            // 이 경우 Redis에 차감한 재고를 되돌려 정합성을 맞춘다.
             log.error("Unexpected duplicate on MySQL insert despite Redis guard: " +
                     "campaignId={}, userId={}", campaignId, userId, e);
             couponRedisProvider.restoreStock(campaignId, userId);
@@ -132,6 +137,7 @@ public class DefaultRedisCouponService implements CouponService {
                     CouponErrorCode.ALREADY_ISSUED.getStatus().value(),
                     CouponErrorCode.ALREADY_ISSUED.getMessage());
         }
+
     }
 
     @Override

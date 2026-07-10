@@ -19,4 +19,5 @@ dependencies {
     implementation("org.flywaydb:flyway-mysql")
 
     runtimeOnly("com.mysql:mysql-connector-j")
+    testImplementation("org.springframework.security:spring-security-test")
 }
