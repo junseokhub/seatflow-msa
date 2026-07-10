@@ -13,7 +13,8 @@ public enum CouponErrorCode {
     ALREADY_ISSUED(HttpStatus.CONFLICT, "이미 발급받은 쿠폰입니다."),
     COUPON_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 쿠폰입니다."),
     COUPON_NOT_OWNED(HttpStatus.FORBIDDEN, "본인 쿠폰이 아닙니다."),
-    COUPON_NOT_USABLE(HttpStatus.BAD_REQUEST, "사용할 수 없는 쿠폰 상태입니다.");
+    COUPON_NOT_USABLE(HttpStatus.BAD_REQUEST, "사용할 수 없는 쿠폰 상태입니다."),
+    REDIS_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "일시적으로 쿠폰 발급이 불가합니다. 잠시 후 다시 시도해주세요.");
 
     private final HttpStatus status;
     private final String message;
