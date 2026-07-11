@@ -12,6 +12,7 @@ package com.seatflow.common.test.composition;
 // 커넥션 정보를 연결해준다.
 
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.test.context.DynamicPropertyRegistry;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 
@@ -24,4 +25,10 @@ public interface MysqlContainerSupport {
             .withUsername("test")
             .withPassword("test")
             .withReuse(true);
+
+    static void registerMysqlProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", MYSQL::getJdbcUrl);
+        registry.add("spring.datasource.username", MYSQL::getUsername);
+        registry.add("spring.datasource.password", MYSQL::getPassword);
+    }
 }

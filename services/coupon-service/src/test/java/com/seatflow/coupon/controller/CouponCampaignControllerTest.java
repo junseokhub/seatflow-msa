@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ContextConfiguration;
@@ -27,21 +28,21 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doAnswer;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * 컨트롤러 계층만 검증한다 — CouponService는 Mock으로 대체하고,
- * 요청이 올바른 서비스 메서드로 전달되는지, @PreAuthorize / SecurityFilterChain의
- * 인가 규칙이 실제로 걸리는지, 응답 상태코드/형식이 올바른지만 확인한다.
+ * 컨트롤러 계층만 검증한다 — 실제 서비스 로직(CouponService)은 Mock으로 대체하고,
+ * "요청이 올바른 서비스 메서드로 전달되는지", "인가 규칙(@PreAuthorize)이 실제로
+ * 걸리는지", "응답이 올바른 상태코드/형식으로 나가는지"만 확인한다.
  *
- * JwtAuthenticationFilter는 실제 토큰 검증 로직 대신 목(pass-through 스텁)으로 대체한다.
- * 이 테스트에서는 @WithMockUser로 SecurityContext를 직접 채우므로 실제 JWT 파싱은
- * 필요 없고, 필터가 체인만 정상적으로 통과시키면 된다.
+ * 주의: @WebMvcTest는 기본적으로 컨트롤러 관련 빈만 로드한다. coupon-service의
+ * SecurityConfig(@Configuration)가 이 테스트 슬라이스에 자동으로 포함되지 않으면
+ * @PreAuthorize 검증(403/401 관련 테스트)이 기대와 다르게 동작할 수 있다 — 이 경우
+ * @Import(SecurityConfig.class)를 클래스 레벨에 명시적으로 추가해야 한다. 실행해보고
+ * 403/401 테스트가 실패하면 이 부분부터 확인할 것.
  */
-@WebMvcTest(controllers = CouponCampaignController.class)
+@WebMvcTest(CouponCampaignController.class)
 @ContextConfiguration(classes = {CouponCampaignController.class, SecurityConfig.class})
 class CouponCampaignControllerTest {
 
@@ -52,11 +53,12 @@ class CouponCampaignControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @MockBean
     @Qualifier("redisCouponService")
     private CouponService couponService;
 
-    @MockitoBean
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @BeforeEach
     void stubJwtFilterToPassThrough() throws Exception {
@@ -136,5 +138,22 @@ class CouponCampaignControllerTest {
                                 {"discountAmount":1000,"totalQuantity":1,"expiresAt":null}
                                 """))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("캠페인 단건 조회는 인증 없이도 가능하다")
+    void anyoneCanGetCampaignById() throws Exception {
+        CouponCampaign campaign = CouponCampaign.builder()
+                .name("단건 조회 테스트")
+                .discountAmount(BigDecimal.valueOf(2000))
+                .totalQuantity(50)
+                .expiresAt(null)
+                .build();
+        given(couponService.getCampaign(1L)).willReturn(campaign);
+
+        mockMvc.perform(get("/api/coupons/campaigns/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.name").value("단건 조회 테스트"));
     }
 }

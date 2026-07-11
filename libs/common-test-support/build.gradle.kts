@@ -18,4 +18,5 @@ dependencies {
     testFixturesApi("org.testcontainers:mysql")
     testFixturesApi("org.testcontainers:kafka")
     testFixturesApi("org.testcontainers:mongodb")
+    testFixturesApi("junit:junit")
 }
