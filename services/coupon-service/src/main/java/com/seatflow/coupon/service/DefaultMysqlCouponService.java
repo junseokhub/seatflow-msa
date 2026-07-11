@@ -170,4 +170,9 @@ public class DefaultMysqlCouponService implements CouponService {
     public void restoreByReservation(Long reservationId) {
         couponRepository.findByReservationId(reservationId).ifPresent(Coupon::restore);
     }
+
+//    @Override
+//    public Coupon issueCouponOutbox(Long campaignId, String userId) {
+//        return null;
+//    }
 }
