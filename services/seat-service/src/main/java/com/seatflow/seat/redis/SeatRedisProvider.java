@@ -34,9 +34,14 @@ public class SeatRedisProvider {
         return result != null && result == 1;
     }
 
-    // 좌석 임시 점유 (SETNX - 원자적 연산) -> 명령 하나 단위
+    /**
+     * 좌석 임시 점유 (SETNX - 원자적 연산) -> 명령 하나 단위.
+     * holdAll/getHolder/releaseIfOwner와 반드시 같은 키(holdKey())를 써야 한다 —
+     * 예전엔 이 메서드가 중괄호 없는 별도 키 형식을 직접 조합해서, holdAll 등이
+     * 보는 키와 서로 다른 좌석을 가리키는 버그가 있었다.
+     */
     public boolean hold(String showId, Long seatId, String userId) {
-        String key = SEAT_HOLD_PREFIX + showId + ":" + seatId;
+        String key = holdKey(showId, seatId);
         Boolean result = redisTemplate.opsForValue()
                 .setIfAbsent(key, userId, HOLD_TTL_MINUTES, TimeUnit.MINUTES);
         return Boolean.TRUE.equals(result);
@@ -47,19 +52,26 @@ public class SeatRedisProvider {
         return redisTemplate.opsForValue().get(holdKey(showId, seatId));
     }
 
-    // 좌석 점유 해제
+    /**
+     * 좌석 점유 해제. holdKey()로 통일 — 위 hold()와 같은 이유.
+     */
     public void release(String showId, Long seatId) {
-        String key = SEAT_HOLD_PREFIX + showId + ":" + seatId;
+        String key = holdKey(showId, seatId);
         redisTemplate.delete(key);
     }
 
-    // 점유 여부 확인
+    /**
+     * 점유 여부 확인. holdKey()로 통일 — 위 hold()와 같은 이유.
+     */
     public boolean isHeld(String showId, Long seatId) {
-        String key = SEAT_HOLD_PREFIX + showId + ":" + seatId;
+        String key = holdKey(showId, seatId);
         return Boolean.TRUE.equals(redisTemplate.hasKey(key));
     }
 
     // 같은 공연 좌석들을 같은 슬롯에 모은다 (cluster-safe)
+    // 모든 메서드(hold, release, isHeld, holdAll, getHolder, releaseIfOwner)가
+    // 반드시 이 메서드를 통해서만 키를 만들어야 한다 — 직접 문자열을 조합하면
+    // 이 형식(중괄호 해시태그 포함)과 어긋나는 별도의 키가 생긴다.
     private String holdKey(String showId, Long seatId) {
         return SEAT_HOLD_PREFIX + "{" + showId + "}:" + seatId;
     }

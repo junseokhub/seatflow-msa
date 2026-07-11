@@ -19,4 +19,5 @@ dependencies {
 	runtimeOnly("com.mysql:mysql-connector-j")
 
 	testImplementation("org.springframework.kafka:spring-kafka-test")
+	"testImplementation"(testFixtures(project(":libs:common-test-support")))
 }

@@ -16,7 +16,7 @@ public interface CouponCampaignRepository extends JpaRepository<CouponCampaign, 
      * @return 실제로 갱신된 row 수. 1이면 발급 성공, 0이면 이미 매진(다른 요청이 먼저
      *         마지막 재고를 가져갔다는 뜻)이라 서비스 계층에서 SOLD_OUT으로 처리한다.
      */
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("UPDATE CouponCampaign c SET c.issuedQuantity = c.issuedQuantity + 1 " +
             "WHERE c.id = :campaignId AND c.issuedQuantity < c.totalQuantity")
     int increaseIssuedQuantity(@Param("campaignId") Long campaignId);
