@@ -29,13 +29,19 @@ public class ReservationConfirmedEventConsumer {
         ReservationConfirmedEvent payload;
         try {
             EventEnvelope<ReservationConfirmedEvent> event = kafkaObjectMapper.readValue(
-                    message, new TypeReference<EventEnvelope<ReservationConfirmedEvent>>() {});
+                    message, new TypeReference<EventEnvelope<ReservationConfirmedEvent>>() {
+                    });
             payload = event.payload();
         } catch (Exception e) {
             log.error("Malformed reservation.confirmed: {}", e.getMessage());
             throw new IllegalStateException("Malformed reservation.confirmed", e);
         }
 
-        seatService.reserveSeat(payload.showId(), payload.seatId(), payload.userId());
+        try {
+            seatService.reserveSeat(payload.showId(), payload.seatId(), payload.userId());
+        } catch (Exception e) {
+            log.error("Seat reserve confirmation failed unexpectedly: showId={}, seatId={}",
+                    payload.showId(), payload.seatId(), e);
+        }
     }
 }
