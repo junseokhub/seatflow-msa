@@ -63,13 +63,14 @@ public class Reservation {
     
     @Builder
     private Reservation(String userId, String showId, Long seatId,
-                        BigDecimal amount, LocalDateTime showDate) {
+                        BigDecimal amount, LocalDateTime showDate, ReservationStatus status) {
         this.userId = userId;
         this.showId = showId;
         this.seatId = seatId;
         this.amount = amount;
         this.showDate = showDate;
         this.reservationNumber = UUID.randomUUID().toString();
+        this.status = status;
     }
 
     /**
