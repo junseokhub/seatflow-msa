@@ -68,12 +68,13 @@ public class CancelSaga {
 
     @Builder
     private CancelSaga(Long reservationId, String userId, Long seatId,
-                       String showId, BigDecimal refundAmount) {
+                       String showId, BigDecimal refundAmount, CancelSagaStatus status) {
         this.reservationId = reservationId;
         this.userId = userId;
         this.seatId = seatId;
         this.showId = showId;
         this.refundAmount = refundAmount;
+        this.status = status;
     }
 
     public void markSeatReleased() {
