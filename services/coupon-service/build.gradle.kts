@@ -9,7 +9,6 @@ dependencies {
     implementation(project(":libs:common-outbox-jpa"))
     implementation(project(":libs:common-redis"))
     implementation(project(":libs:common-events"))
-    "testImplementation"(testFixtures(project(":libs:common-test-support")))
 
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-validation")
@@ -20,5 +19,7 @@ dependencies {
     implementation("org.flywaydb:flyway-mysql")
 
     runtimeOnly("com.mysql:mysql-connector-j")
+
+    "testImplementation"(testFixtures(project(":libs:common-test-support")))
     testImplementation("org.springframework.security:spring-security-test")
 }
