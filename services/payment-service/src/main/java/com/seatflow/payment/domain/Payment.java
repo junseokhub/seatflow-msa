@@ -88,8 +88,16 @@ public class Payment {
         this.refundedAmount = refundedAmount;
     }
 
+    /**
+     * status 파라미터는 순수 단위 테스트에서 실제 저장(@PrePersist) 없이 원하는
+     * 초기 상태를 바로 만들기 위한 것이다. 운영 코드는 이 파라미터를 넘기지 않고,
+     * 실제 저장 시 @PrePersist가 무조건 PENDING으로 세팅하므로 운영 흐름에는
+     * 영향이 없다. (coupon/seat/reservation에서 반복 적용한 것과 같은 패턴.)
+     */
     @Builder
-    private Payment(Long reservationId, String userId, BigDecimal amount, PaymentMethod paymentMethod, Long couponId, BigDecimal discountAmount) {
+    private Payment(Long reservationId, String userId, BigDecimal amount,
+                    PaymentMethod paymentMethod, Long couponId, BigDecimal discountAmount,
+                    PaymentStatus status) {
         this.paymentNumber = UUID.randomUUID().toString();
         this.reservationId = reservationId;
         this.userId = userId;
@@ -97,5 +105,6 @@ public class Payment {
         this.paymentMethod = paymentMethod;
         this.couponId = couponId;
         this.discountAmount = discountAmount;
+        this.status = status;
     }
 }
