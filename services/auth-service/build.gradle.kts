@@ -21,4 +21,7 @@ dependencies {
 	runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
 
 	runtimeOnly("com.mysql:mysql-connector-j")
+
+	"testImplementation"(testFixtures(project(":libs:common-test-support")))
+	testImplementation("org.springframework.security:spring-security-test")
 }
