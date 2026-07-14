@@ -34,7 +34,7 @@ public class GlobalExceptionHandler {
     /**
      * @RequestHeader(required=true, 기본값)인 헤더가 요청에 없을 때 Spring이
      * 던지는 예외. 이게 별도 핸들러 없이 Exception.class로 떨어지면 클라이언트
-     * 잘못(400)이 서버 오류(500)로 응답돼, 클라이언트가 원인을 파악하기 어려워진다.
+     * 잘못(400)이 서버 오류(500)로 응답돼, 클라이언트가 원인을 파악하기 어려워진다 —
      * payment-service의 Idempotency-Key 헤더 누락 테스트로 실제로 겪었다.
      */
     @ExceptionHandler(MissingRequestHeaderException.class)
@@ -55,6 +55,21 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.fail("잘못된 요청 파라미터입니다: " + e.getName()));
+    }
+
+    /**
+     * @CookieValue(required=true, 기본값)인 쿠키가 요청에 없을 때 Spring이
+     * 던지는 예외. MissingRequestHeaderException과 같은 이유(클라이언트 잘못이
+     * 500으로 응답되는 문제)로 별도 핸들러가 필요하다 — auth-service의
+     * refresh_token 쿠키 누락 테스트로 실제로 겪었다.
+     */
+    @ExceptionHandler(org.springframework.web.bind.MissingRequestCookieException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMissingRequestCookie(
+            org.springframework.web.bind.MissingRequestCookieException e) {
+        log.warn("Missing required cookie: {}", e.getCookieName());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.fail("필수 쿠키가 없습니다: " + e.getCookieName()));
     }
 
     @ExceptionHandler(AuthorizationDeniedException.class)
