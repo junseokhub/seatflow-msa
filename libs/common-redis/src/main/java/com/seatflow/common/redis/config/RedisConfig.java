@@ -39,6 +39,7 @@ public class RedisConfig {
 
     private final RedisProperties redisProperties;
 
+    // 테스트 아닐경우 클러스터모드
     @Bean
     @Profile("!test")
     public RedisConnectionFactory redisConnectionFactory() {
