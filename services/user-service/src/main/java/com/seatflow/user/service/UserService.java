@@ -6,47 +6,63 @@ import com.seatflow.user.exception.UserErrorCode;
 import com.seatflow.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 /**
  * 회원 생성 — 멱등 처리. at-least-once로 같은 user.registered가 중복 도착해도
- * 유저는 한 번만 생성되어야 한다. 네 가지 방식의 트레이드오프가 있다.
- * 비교 구현은 별도로 남겨뒀다(운영 코드에 영향 없음).
+ * 유저는 한 번만 생성되어야 한다. 실제 비교 구현(전체 4가지 방식)은
+ * idempotency-variants 폴더에 별도로 남겨뒀다(운영 코드에 영향 없음).
  *
  * ───────────────────────────────────────────────────────────────
- * 방식 비교 (멱등성 충돌 처리)
+ * 방식 비교 (멱등성 충돌 처리) — 자세한 트레이드오프는 4-1번외편 블로그 참고
  *
- * [1] save + catch (같은 트랜잭션)
- *     - save()가 unique 충돌 시 DataIntegrityViolationException 발생 → 컨슈머에서 catch
- *     - 장점: JPA 라이프사이클(@PrePersist, cascade) 유지, 표준 JPA
- *     - 단점: 예외가 트랜잭션을 rollback-only로 오염 → 컨슈머에 트랜잭션 없어야만 안전(조건부)
+ * [1] save + catch (같은 트랜잭션) — 컨슈머 무트랜잭션 전제에서만 안전
+ * [2] INSERT IGNORE (native)       ← 현재 활성
+ * [3] REQUIRES_NEW + catch          — 별도 빈 분리 필요, 커넥션 비용
+ * [4] noRollbackFor + catch         — 채택했다가 철회함(아래 참고)
+ * [Inbox] processed_event 별도 테이블 — User는 자체 unique 제약으로 충분해 비채택
  *
- * [2] INSERT IGNORE (native)
- *     - 충돌 시 예외 없이 0 리턴 → 트랜잭션 오염 원천 차단(항상 안전)
- *     - 단점: @PrePersist/빌더/cascade 우회 → status·시각을 쿼리에 직접 박아야 함.
- *             엔티티가 복잡(연관관계 다수)할수록 native로 다 박는 비용이 폭증.
- *     - 단순 엔티티(user)에 적합.
+ * [4]를 왜 철회했는가:
+ *   처음엔 noRollbackFor + saveAndFlush + catch 조합을 채택했었다. 근데
+ *   saveAndFlush()가 unique 제약 위반으로 실패하는 순간, catch로 예외를
+ *   잡기 전에 이미 Spring 트랜잭션이 "rollback-only"로 마킹된다는 걸
+ *   동시성 통합 테스트에서 실제로 확인했다 — catch해서 정상 종료된 것처럼
+ *   보여도, 메서드가 끝나고 커밋을 시도하는 순간 UnexpectedRollbackException이
+ *   터졌다. noRollbackFor는 "예외가 메서드 밖으로 나갈 때"를 위한 옵션이라,
+ *   메서드 안에서 catch로 삼키는 구조에는 애초에 적용되지 않는다.
  *
- * [3] REQUIRES_NEW + catch
- *     - createUser를 독립 트랜잭션으로 띄움. 충돌로 롤백돼도 "이 트랜잭션만" 롤백되고
- *       바깥(컨슈머) 트랜잭션은 오염되지 않음 → 안전.
- *     - save()를 쓰므로 JPA 라이프사이클(cascade·@PrePersist) 그대로 유지.
- *     - "오염 막기"와 "엔티티 로직 유지"를 동시에. 복잡 엔티티에 특히 유리.
- *     - 비용: 매 호출 새 트랜잭션 시작(약간의 오버헤드).
+ *   Mock 기반 단위 테스트로는 이 문제가 절대 안 잡힌다 — 진짜 Spring
+ *   트랜잭션 매니저와 진짜 DB가 있어야 재현되는 문제였다.
  *
- * [4] noRollbackFor + catch  ← 현재 활성 (추천, 복잡·배치 엔티티)
- *     - 단일 트랜잭션 내에서 unique 충돌 예외만 rollback 대상에서 제외하여 오염 방지.
- *     - 장점: save() 계열을 그대로 쓰므로 JPA 라이프사이클 및 영속성 컨텍스트 기능 유지.
- *     - 비용 효율: [3]번과 달리 새 트랜잭션을 띄우지 않아 커넥션 풀 고갈(데드락) 위험이 없음.
- *     - 정합성: 메인 비즈니스 로직 실패 시 유저/좌석 저장도 다 함께 안전하게 롤백됨.
- *      ([3]번의 치명적인 단점인 '부분 커밋으로 인한 데이터 유실'을 완벽히 방어)
- *     - 대량의 벌크 인서트(seat)나 복잡한 엔티티 정합성이 중요할 때 가장 이상적.
+ * [2]를 최종 채택한 이유:
+ *   예외 자체가 나지 않아 트랜잭션 오염 문제가 원천적으로 생기지 않는다.
+ *   User는 필드가 단순(@PrePersist가 시각/기본값만 채움)해서 native 쿼리로
+ *   직접 값을 넣는 비용이 작다. REQUIRES_NEW([3])처럼 별도 빈 분리나 추가
+ *   커넥션 비용도 없다.
+ * ───────────────────────────────────────────────────────────────
+ */
+
+/**
+ * [4]를 왜 철회했는가:
+ *   처음엔 noRollbackFor + saveAndFlush + catch 조합을 채택했었다. 근데
+ *   saveAndFlush()가 unique 제약 위반으로 실패하는 순간, catch로 예외를
+ *   잡기 전에 이미 Spring 트랜잭션이 "rollback-only"로 마킹된다는 걸
+ *   동시성 통합 테스트에서 실제로 확인했다 — catch해서 정상 종료된 것처럼
+ *   보여도, 메서드가 끝나고 커밋을 시도하는 순간 UnexpectedRollbackException이
+ *   터졌다. noRollbackFor는 "예외가 메서드 밖으로 나갈 때"를 위한 옵션이라,
+ *   메서드 안에서 catch로 삼키는 구조에는 애초에 적용되지 않는다.
  *
- * [Inbox] processed_event 별도 테이블로 이벤트 처리 여부를 추적하는 방식도 검토했으나,
- *     User는 id(PK)/email(unique)에 이미 자연스러운 멱등 방어벽이 있어 별도 테이블을
- *     추가로 두는 비용을 정당화하기 어려워 채택하지 않았다.
+ *   Mock 기반 단위 테스트로는 이 문제가 절대 안 잡힌다 — 진짜 Spring
+ *   트랜잭션 매니저와 진짜 DB가 있어야 재현되는 문제였다.
+ *
+ * [2]를 최종 채택한 이유:
+ *   예외 자체가 나지 않아 트랜잭션 오염 문제가 원천적으로 생기지 않는다.
+ *   User는 필드가 단순(@PrePersist가 시각/기본값만 채움)해서 native 쿼리로
+ *   직접 값을 넣는 비용이 작다. REQUIRES_NEW([3])처럼 별도 빈 분리나 추가
+ *   커넥션 비용도 없다.
  * ───────────────────────────────────────────────────────────────
  */
 @Slf4j
@@ -56,25 +72,11 @@ public class UserService {
 
     private final UserRepository userRepository;
 
-    @Transactional(noRollbackFor = DataIntegrityViolationException.class)
+    @Transactional
     public void createUser(String userId, String email, String name) {
-        try {
-            User user = User.builder()
-                    .id(userId)
-                    .email(email)
-                    .name(name)
-                    .build();
-            userRepository.saveAndFlush(user);   // 라이프사이클(@PrePersist 등) 정상 동작
-        } catch (DataIntegrityViolationException e) {
-            // 내부 원인을 한 번 더 체크해서 '유니크 제약조건 충돌'일 때만 조용히 무시
-            Throwable cause = e.getRootCause();
-            if (cause instanceof java.sql.SQLException sqlEx && sqlEx.getErrorCode() == 1062) {
-                log.info("중복된 가입 요청 감지 - 멱등성 통과 처리: userId={}, email={}", userId, email);
-                return; // noRollbackFor 덕분에 정상 흐름으로 끝나고 커밋(ACK)됨
-            }
-
-            // 만약 NOT NULL 위반 등 다른 정합성 에러라면 다시 던져서 전체 롤백 유도
-            throw e;
+        int inserted = userRepository.insertIgnore(userId, email, name, LocalDateTime.now());
+        if (inserted == 0) {
+            log.info("중복된 가입 요청 감지 - 멱등성 통과 처리(INSERT IGNORE): userId={}, email={}", userId, email);
         }
     }
 

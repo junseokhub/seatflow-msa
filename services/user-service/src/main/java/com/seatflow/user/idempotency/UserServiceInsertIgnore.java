@@ -1,4 +1,4 @@
-package com.seatflow.user.service;
+package com.seatflow.user.idempotency;
 
 import com.seatflow.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
