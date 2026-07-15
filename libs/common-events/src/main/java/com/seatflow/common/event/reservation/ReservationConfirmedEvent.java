@@ -1,5 +1,7 @@
 package com.seatflow.common.event.reservation;
 
+import com.seatflow.common.event.VersionedEvent;
+
 /**
  * 예매 확정 이벤트. 결제 완료로 예매가 CONFIRMED되면 발행한다.
  * seat이 받아 해당 좌석을 임시 점유(Redis hold)에서 영구 확정(DB RESERVED)으로 넘긴다.
@@ -10,4 +12,9 @@ public record ReservationConfirmedEvent(
         String userId,
         String showId,
         Long seatId
-) {}
+) implements VersionedEvent {
+    @Override
+    public String eventVersion() {
+        return "1.0";
+    }
+}

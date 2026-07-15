@@ -18,4 +18,9 @@ public interface RedisContainerSupport {
             new GenericContainer<>(DockerImageName.parse("redis:7-alpine"))
                     .withExposedPorts(6379)
                     .withReuse(true);
+
+    static void registerDefaultProperties(org.springframework.test.context.DynamicPropertyRegistry registry) {
+        registry.add("spring.data.redis.host", REDIS::getHost);
+        registry.add("spring.data.redis.port", () -> REDIS.getMappedPort(6379));
+    }
 }

@@ -26,9 +26,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * holdSeats() 전체 흐름(Redis 게이트 + DB 검증 + Outbox 기록)이 진짜 동시 요청
- * 상황에서 안전한지 검증한다. 좌석 하나를 두고 여러 사용자가 동시에 경쟁할 때
- * 정확히 한 명만 hold에 성공해야 한다.
+ * holdSeats() 전체 흐름(Redis 게이트 + DB 검증 + Outbox 기록)이 진짜 동시 요청 상황에서 안전한지 검증한다.
+ * 좌석 하나를 두고 여러 사용자가 동시에 경쟁할 때 정확히 한 명만 hold에 성공해야 한다.
  */
 @Testcontainers
 @ActiveProfiles("test")
@@ -37,8 +36,8 @@ class SeatHoldIntegrationTest implements MysqlContainerSupport, RedisContainerSu
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-        registry.add("spring.flyway.enabled", () -> "false");
+        RedisContainerSupport.registerDefaultProperties(registry);
+        MysqlContainerSupport.registerMysqlProperties(registry);
     }
 
     @Autowired

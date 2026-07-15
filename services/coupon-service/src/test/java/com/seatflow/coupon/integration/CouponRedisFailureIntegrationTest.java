@@ -22,10 +22,10 @@ import java.math.BigDecimal;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Redis 장애 시 Fail-closed 동작을 검증한다. 다른 테스트들이 공유하는 Singleton
- * Redis 컨테이너(RedisContainerSupport)를 이 테스트 때문에 멈추면 이후 모든
- * 테스트가 깨지므로, 이 클래스만 독립적인 전용 Redis 컨테이너를 새로 띄운다 —
- * 여기서만 stop()으로 장애를 강제할 수 있게.
+ * Redis 장애 시 Fail-closed 동작을 검증한다.
+ * 다른 테스트들이 공유하는 Singleton Redis 컨테이너(RedisContainerSupport)를 이 테스트 때문에 멈추면 이후 모든 테스트가 깨지므로,
+ * 이 클래스만 독립적인 전용 Redis 컨테이너를 새로 띄운다.
+ * 여기서만 stop()으로 장애를 강제할 수 있게
  */
 @Testcontainers
 @ActiveProfiles("test")
@@ -42,8 +42,7 @@ class CouponRedisFailureIntegrationTest implements MysqlContainerSupport {
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-        registry.add("spring.flyway.enabled", () -> "false");
+        MysqlContainerSupport.registerMysqlProperties(registry);
         registry.add("spring.data.redis.host", DEDICATED_REDIS::getHost);
         registry.add("spring.data.redis.port", () -> DEDICATED_REDIS.getMappedPort(6379));
     }

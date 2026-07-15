@@ -72,6 +72,21 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.fail("필수 쿠키가 없습니다: " + e.getCookieName()));
     }
 
+    /**
+     * 요청 바디를 JSON으로 파싱하다가 실패했을 때(예: enum에 없는 문자열 값,
+     * 잘못된 JSON 문법) Spring이 던지는 예외. MissingRequestHeaderException,
+     * MissingRequestCookieException과 같은 이유로 별도 핸들러가 필요하다.
+     * show-service의 잘못된 enum 값 테스트로 발견했다.
+     */
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMessageNotReadable(
+            org.springframework.http.converter.HttpMessageNotReadableException e) {
+        log.warn("Malformed request body: {}", e.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.fail("요청 형식이 올바르지 않습니다."));
+    }
+
     @ExceptionHandler(AuthorizationDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> handleAuthorizationDenied(AuthorizationDeniedException e) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)

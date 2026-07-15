@@ -13,10 +13,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 취소 수수료 정책의 날짜 경계값을 정확히 검증한다. 정책 자체가 "N일 이상이면
- * X%"라는 경계 조건 나열이라, 정확히 그 경계(9일째와 10일째, 6일째와 7일째 등)를
- * 하나씩 짚어야 실수를 잡을 수 있다 — 코드를 눈으로만 읽어서는 "9.99일"처럼
- * 애매한 경우의 반올림/버림 방향을 확신하기 어렵다.
+ * 취소 수수료 정책의 날짜 경계값을 정확히 검증한다. 정책 자체가 "N일 이상이면 X%"라는 경계 조건 나열이라,
+ * 정확히 그 경계(9일째와 10일째, 6일째와 7일째 등)를 하나씩 짚어야 실수를 잡을 수 있다.
+ * 코드를 눈으로만 읽어서는 "9.99일"처럼 애매한 경우의 반올림/버림 방향을 확신하기 어렵다.
  */
 class CancellationPolicyTest {
 

@@ -18,9 +18,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * IdempotencyProvider의 Lua 스크립트(TRY_ACQUIRE)가 진짜 Redis 위에서 원자적으로
- * 동작하는지 검증한다. "처음/처리중/완료" 세 상태 전이와, 같은 키로 동시에
- * 몰리는 요청 중 정확히 하나만 통과하는지가 핵심이다.
+ * IdempotencyProvider의 Lua 스크립트(TRY_ACQUIRE)가 진짜 Redis 위에서 원자적으로 동작하는지 검증한다.
+ * "처음/처리중/완료" 세 상태 전이와, 같은 키로 동시에 몰리는 요청 중 정확히 하나만 통과하는지가 핵심이다.
  */
 @Testcontainers
 @ActiveProfiles("test")
@@ -29,10 +28,9 @@ class IdempotencyProviderIntegrationTest implements MysqlContainerSupport, Redis
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-        registry.add("spring.flyway.enabled", () -> "false");
+        RedisContainerSupport.registerDefaultProperties(registry);
+        MysqlContainerSupport.registerMysqlProperties(registry);
     }
-
     @Autowired
     private IdempotencyProvider idempotencyProvider;
 

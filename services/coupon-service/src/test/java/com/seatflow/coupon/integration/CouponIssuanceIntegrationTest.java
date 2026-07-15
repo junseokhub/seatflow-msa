@@ -42,13 +42,8 @@ class CouponIssuanceIntegrationTest implements MysqlContainerSupport, RedisConta
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        // MysqlContainerSupport, RedisContainerSupport 둘 다 @ServiceConnection
-        // 방식이라 커넥션 프로퍼티는 자동으로 연결된다 — 수동으로 registry에
-        // url/host/port를 등록할 필요가 없다. 여기서는 그 외의(테스트 전용) 설정만 한다.
-//        MysqlContainerSupport.registerMysqlProperties(registry);
-//        RedisContainerSupport.registerRedisProperties(registry);
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-        registry.add("spring.flyway.enabled", () -> "false");
+        RedisContainerSupport.registerDefaultProperties(registry);
+        MysqlContainerSupport.registerMysqlProperties(registry);
     }
 
     @Autowired

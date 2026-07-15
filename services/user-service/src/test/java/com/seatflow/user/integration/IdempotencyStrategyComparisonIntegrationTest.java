@@ -27,16 +27,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * 세 가지 멱등성 방식([1] save+catch, [2] INSERT IGNORE, [3] REQUIRES_NEW)이
- * 각각 "컨슈머에 트랜잭션이 없는, 단순한 호출 상황"에서는 전부 정상 동작함을
- * 확인한다. [1]의 진짜 위험(호출자에 트랜잭션이 있을 때 rollback-only 오염)은
- * 여기서 재현하지 않는다 — 그 실패를 재현하려면 이 메서드를 감싸는 외부
- * @Transactional 호출자가 필요한데, 그건 지금 채택된 [4](noRollbackFor)가 왜
- * 필요했는지를 보여주는 별도 시나리오이지, 이 세 방식을 "단순 비교"하는
- * 목적에는 맞지 않아 이 클래스에서는 다루지 않는다.
+ * 각각 "컨슈머에 트랜잭션이 없는, 단순한 호출 상황"에서는 전부 정상 동작함을 확인한다.
+ * [1]의 진짜 위험(호출자에 트랜잭션이 있을 때 rollback-only 오염)은 여기서 재현하지 않는다.
+ * 그 실패를 재현하려면 이 메서드를 감싸는 외부 @Transactional 호출자가 필요한데,
+ * 그건 지금 채택된 [4](noRollbackFor)가 왜 필요했는지를 보여주는 별도 시나리오이지,
+ * 이 세 방식을 "단순 비교"하는 목적에는 맞지 않아 이 클래스에서는 다루지 않는다.
  *
- * 참고: 실제 서비스 빈으로는 등록되지 않은 클래스들이라(빈 이름이 충돌하지
- * 않도록 별도 @Service 이름을 줬다) 운영 코드에 영향이 없다 — 순수 비교
- * 학습 목적으로만 존재한다.
+ * 참고: 실제 서비스 빈으로는 등록되지 않은 클래스들이라(빈 이름이 충돌하지 않도록 별도 @Service 이름을 줬다) 운영 코드에 영향이 없다
+ * 순수 비교 - 학습 목적으로만 존재한다.
  */
 @Testcontainers
 @ActiveProfiles("test")
@@ -45,8 +43,7 @@ class IdempotencyStrategyComparisonIntegrationTest implements MysqlContainerSupp
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-        registry.add("spring.flyway.enabled", () -> "false");
+        MysqlContainerSupport.registerMysqlProperties(registry);
     }
 
     @Autowired
