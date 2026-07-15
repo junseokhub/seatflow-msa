@@ -6,6 +6,7 @@ import io.lettuce.core.SocketOptions;
 import io.lettuce.core.cluster.ClusterClientOptions;
 import io.lettuce.core.cluster.ClusterTopologyRefreshOptions;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,6 +33,7 @@ import java.util.List;
 @Configuration
 @RequiredArgsConstructor
 @EnableConfigurationProperties(RedisProperties.class)
+@Slf4j
 public class RedisConfig {
 
     private final RedisProperties redisProperties;
@@ -68,14 +70,14 @@ public class RedisConfig {
                 .clientOptions(clientOptions)
                 .commandTimeout(Duration.ofMillis(3000L))
                 .build();
-
+        log.info(">>> NON-TEST(클러스터) RedisConnectionFactory 사용됨");
         return new LettuceConnectionFactory(clusterConfiguration, clientConfiguration);
     }
 
     /**
-     * 테스트 전용. spring.data.redis.host/port(TestContainers가 @DynamicPropertySource로
-     * 주입)를 그대로 읽어 단일 노드로 연결한다. 비밀번호는 테스트 컨테이너에 안 걸었으므로 비워둔다
-     * (필요하면 REDIS 컨테이너에 --requirepass로 맞출 수도 있으나, 지금은 테스트 목적상 불필요).
+     * 테스트 전용.
+     * spring.data.redis.host/port(TestContainers가 @DynamicPropertySource로주입)를 그대로 읽어 단일 노드로 연결한다.
+     * 비밀번호는 테스트 컨테이너에 안 걸었으므로 비워둔다(필요하면 REDIS 컨테이너에 --requirepass로 맞출 수도 있으나, 지금은 테스트 목적상 불필요).
      */
     @Bean
     @Profile("test")
@@ -83,6 +85,7 @@ public class RedisConfig {
             org.springframework.core.env.Environment env) {
         String host = env.getProperty("spring.data.redis.host");
         int port = Integer.parseInt(env.getProperty("spring.data.redis.port"));
+        log.info(">>> TEST profile RedisConnectionFactory 사용됨");
         return new LettuceConnectionFactory(new RedisStandaloneConfiguration(host, port));
     }
 

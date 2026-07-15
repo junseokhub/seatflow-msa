@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "com.seatflow")
 @EntityScan(basePackages = {
 		"com.seatflow.reservation.domain",
 		"com.seatflow.common.outbox.jpa"

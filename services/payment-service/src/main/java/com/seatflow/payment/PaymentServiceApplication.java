@@ -7,7 +7,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "com.seatflow")
 @EntityScan(basePackages = {
 		"com.seatflow.payment.domain",
 		"com.seatflow.common.outbox.jpa"

@@ -8,7 +8,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "com.seatflow")
 @EntityScan(basePackages = {
 		"com.seatflow.auth.domain",
 		"com.seatflow.common.outbox.jpa"

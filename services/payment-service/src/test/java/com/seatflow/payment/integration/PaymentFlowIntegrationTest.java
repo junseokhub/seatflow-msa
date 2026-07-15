@@ -42,10 +42,9 @@ import static org.mockito.BDDMockito.given;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class PaymentFlowIntegrationTest implements MysqlContainerSupport, RedisContainerSupport {
 
-    @DynamicPropertySource
+     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        RedisContainerSupport.registerDefaultProperties(registry);
-        MysqlContainerSupport.registerMysqlProperties(registry);
+        MysqlContainerSupport.registerDefaultJpaProperties(registry);
     }
 
     @Autowired

@@ -25,15 +25,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 정석 동시 출발 패턴: 스레드 풀 크기를 요청 수와 동일하게 만든다. 그러면 모든
- * 작업이 "즉시 실행 중" 상태가 되고(대기 큐에 남는 작업이 없음), readyLatch로
- * "전원이 준비될 때까지 대기 → 동시 출발"을 걸어도 데드락이 생기지 않는다.
- *
- * (이전 시도에서 스레드 풀을 요청 수보다 작게 주고 readyLatch로 전원 대기를
- * 걸었다가 데드락이 났었다 — 풀에 못 들어간 작업은 시작도 못해 readyLatch를
- * 채울 수 없는데, 이미 실행 중인 작업은 그 카운트가 다 찰 때까지 멈춰있어서
- * 서로 영원히 기다리는 상태가 됐다. 스레드 풀을 요청 수만큼 주면 이 문제 자체가
- * 사라진다 — 모든 작업이 즉시 실행 상태이므로 각자 readyLatch를 채울 수 있다.)
+ * 정석 동시 출발 패턴: 스레드 풀 크기를 요청 수와 동일하게 만든다.
+ * 그러면 모든 작업이 "즉시 실행 중" 상태가 되고(대기 큐에 남는 작업이 없음),
+ * readyLatch로 "전원이 준비될 때까지 대기 -> 동시 출발"을 걸어도 데드락이 생기지 않는다.
+ * 이전 시도에서 스레드 풀을 요청 수보다 작게 주고 readyLatch로 전원 대기를 걸었다가 데드락이 났었다.
+ * 풀에 못 들어간 작업은 시작도 못해 readyLatch를 채울 수 없는데,
+ * 이미 실행 중인 작업은 그 카운트가 다 찰 때까지 멈춰있어서 서로 영원히 기다리는 상태가 됐다.
+ * 스레드 풀을 요청 수만큼 주면 이 문제 자체가 사라진다.모든 작업이 즉시 실행 상태이므로 각자 readyLatch를 채울 수 있다.
  */
 @Testcontainers
 @ActiveProfiles("test")
@@ -42,8 +40,7 @@ class CouponIssuanceIntegrationTest implements MysqlContainerSupport, RedisConta
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        RedisContainerSupport.registerDefaultProperties(registry);
-        MysqlContainerSupport.registerMysqlProperties(registry);
+        MysqlContainerSupport.registerDefaultJpaProperties(registry);
     }
 
     @Autowired

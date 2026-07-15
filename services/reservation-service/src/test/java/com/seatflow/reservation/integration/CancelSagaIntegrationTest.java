@@ -38,10 +38,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class CancelSagaIntegrationTest implements MysqlContainerSupport {
 
-    @DynamicPropertySource
+     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        RedisContainerSupport.registerDefaultProperties(registry);
-        MysqlContainerSupport.registerMysqlProperties(registry);
+        MysqlContainerSupport.registerDefaultJpaProperties(registry);
     }
     @Autowired
     private ReservationRepository reservationRepository;
