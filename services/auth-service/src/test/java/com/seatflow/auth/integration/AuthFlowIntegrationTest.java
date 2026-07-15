@@ -15,15 +15,17 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 회원가입 -> 로그인 -> 토큰검증 -> 로그아웃 전체 흐름과, 계정 잠금의 동시성
- * 안전성을 진짜 MySQL + Redis 위에서 검증한다.
+ * 회원가입 -> 로그인 -> 토큰검증 -> 로그아웃 전체 흐름과, 계정 잠금의 동시성 안전성을 진짜 MySQL + Redis 위에서 검증한다.
  */
 @Testcontainers
 @ActiveProfiles("test")
@@ -32,8 +34,8 @@ class AuthFlowIntegrationTest implements MysqlContainerSupport, RedisContainerSu
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-        registry.add("spring.flyway.enabled", () -> "false");
+        RedisContainerSupport.registerDefaultProperties(registry);
+        MysqlContainerSupport.registerMysqlProperties(registry);
     }
 
     @Autowired

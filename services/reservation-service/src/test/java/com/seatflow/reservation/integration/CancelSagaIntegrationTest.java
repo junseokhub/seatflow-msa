@@ -2,6 +2,7 @@ package com.seatflow.reservation.integration;
 
 import com.seatflow.common.exception.BusinessException;
 import com.seatflow.common.test.composition.MysqlContainerSupport;
+import com.seatflow.common.test.composition.RedisContainerSupport;
 import com.seatflow.reservation.domain.CancelSaga;
 import com.seatflow.reservation.domain.CancelSagaStatus;
 import com.seatflow.reservation.domain.Reservation;
@@ -27,11 +28,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 취소 Saga의 전체 흐름을 진짜 MySQL 위에서 검증한다. 각 단계는 원래 비동기
- * (Kafka 이벤트를 매개로) 진행되지만, 여기서는 컨슈머가 오케스트레이터의 메서드를
- * 그대로 호출한다는 걸 이미 컨슈머 단위 테스트에서 확인했으므로, 오케스트레이터의
- * 메서드를 순서대로 직접 호출해 "Saga 상태 기계가 실제 DB 위에서 올바르게
- * 흘러가는지"에 집중한다. 진짜 Kafka까지 띄우는 end-to-end 검증은 Saga통합 테스트 범위로 미룬다.
+ * 취소 Saga의 전체 흐름을 진짜 MySQL 위에서 검증한다. 각 단계는 원래 비동기 (Kafka 이벤트를 매개로) 진행되지만,
+ * 여기서는 컨슈머가 오케스트레이터의 메서드를 그대로 호출한다는 걸 이미 컨슈머 단위 테스트에서 확인했으므로,
+ * 오케스트레이터의 메서드를 순서대로 직접 호출해 "Saga 상태 기계가 실제 DB 위에서 올바르게 흘러가는지"에 집중한다.
+ * 진짜 Kafka까지 띄우는 end-to-end 검증은 Saga통합 테스트 범위로 미룬다.
  */
 @Testcontainers
 @ActiveProfiles("test")
@@ -40,10 +40,9 @@ class CancelSagaIntegrationTest implements MysqlContainerSupport {
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-        registry.add("spring.flyway.enabled", () -> "false");
+        RedisContainerSupport.registerDefaultProperties(registry);
+        MysqlContainerSupport.registerMysqlProperties(registry);
     }
-
     @Autowired
     private ReservationRepository reservationRepository;
     @Autowired
@@ -58,9 +57,9 @@ class CancelSagaIntegrationTest implements MysqlContainerSupport {
                 .status(ReservationStatus.PENDING)
                 .build();
         Reservation saved = reservationRepository.save(reservation);
-        // JpaRepository.save()는 그 자체로 트랜잭션이 열리고 끝나므로, 반환된 saved는
-        // 이후 detached 상태다. confirm()으로 바꾼 상태는 메모리에만 있고 DB에는
-        // 반영되지 않으므로, 명시적으로 다시 save해야 진짜로 CONFIRMED가 저장된다.
+        // JpaRepository.save()는 그 자체로 트랜잭션이 열리고 끝나므로, 반환된 saved는 이후 detached 상태다.
+        // confirm()으로 바꾼 상태는 메모리에만 있고 DB에는 반영되지 않으므로,
+        // 명시적으로 다시 save해야 진짜로 CONFIRMED가 저장된다.
         saved.confirm();
         return reservationRepository.save(saved);
     }

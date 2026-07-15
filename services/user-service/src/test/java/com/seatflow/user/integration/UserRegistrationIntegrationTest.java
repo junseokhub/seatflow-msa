@@ -1,6 +1,7 @@
 package com.seatflow.user.integration;
 
 import com.seatflow.common.test.composition.MysqlContainerSupport;
+import com.seatflow.common.test.composition.RedisContainerSupport;
 import com.seatflow.user.domain.User;
 import com.seatflow.user.repository.UserRepository;
 import com.seatflow.user.service.UserService;
@@ -21,11 +22,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * UserService.createUser()의 noRollbackFor 멱등 전략이 진짜 동시 요청(at-least-once
- * 재전달을 흉내낸 상황)에서도 정확히 유저 1명만 만드는지 검증한다. Mock으로는
- * "unique 제약 위반 시 조용히 무시한다"는 분기 로직만 확인할 수 있을 뿐, 진짜
- * DB 레벨에서 여러 스레드가 동시에 같은 id로 insert를 시도했을 때 실제로 하나만
- * 성공하고 나머지가 정확히 그 예외 경로를 타는지는 진짜 DB가 있어야 증명된다.
+ * UserService.createUser()의 noRollbackFor 멱등 전략이 진짜 동시 요청(at-least-once 재전달을 흉내낸 상황)에서도
+ * 정확히 유저 1명만 만드는지 검증한다.
+ * Mock으로는 "unique 제약 위반 시 조용히 무시한다"는 분기 로직만 확인할 수 있을 뿐,
+ * 진짜 DB 레벨에서 여러 스레드가 동시에 같은 id로 insert를 시도했을 때 실제로 하나만 성공하고
+ * 나머지가 정확히 그 예외 경로를 타는지는 진짜 DB가 있어야 증명된다.
  */
 @Testcontainers
 @ActiveProfiles("test")
@@ -35,8 +36,8 @@ class UserRegistrationIntegrationTest implements MysqlContainerSupport {
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-        registry.add("spring.flyway.enabled", () -> "false");
+        RedisContainerSupport.registerDefaultProperties(registry);
+        MysqlContainerSupport.registerMysqlProperties(registry);
     }
 
     @Autowired

@@ -33,9 +33,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
 /**
- * 결제 전체 흐름(PaymentFacade -> DefaultPaymentService -> Repository/Redis)을
- * 진짜 MySQL+Redis 위에서 검증한다. ReservationClient/CouponClient는 다른 서비스에
- * 대한 외부 호출(Feign)이라 Mock으로 대체한다.
+ * 결제 전체 흐름(PaymentFacade -> DefaultPaymentService -> Repository/Redis)을 진짜 MySQL+Redis 위에서 검증한다.
+ * ReservationClient/CouponClient는 다른 서비스에 대한 외부 호출(Feign)이라 Mock으로 대체한다.
  * 진짜 서비스 간 연동까지 띄우는 end-to-end 검증은 Saga 통합 테스트 범위
  */
 @Testcontainers
@@ -45,8 +44,8 @@ class PaymentFlowIntegrationTest implements MysqlContainerSupport, RedisContaine
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-        registry.add("spring.flyway.enabled", () -> "false");
+        RedisContainerSupport.registerDefaultProperties(registry);
+        MysqlContainerSupport.registerMysqlProperties(registry);
     }
 
     @Autowired

@@ -3,6 +3,7 @@ package com.seatflow.seat.sse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.seatflow.common.event.seat.SeatStatusChangedEvent;
 import com.seatflow.seat.redis.SeatUpdateSubscriber;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -53,7 +54,7 @@ class SeatUpdateSubscriberTest {
     @Test
     @DisplayName("깨진 메시지는 예외를 삼키고 로그만 남긴다 (구독자 자체가 죽지 않음)")
     void malformedMessageIsSwallowedNotThrown() {
-        org.junit.jupiter.api.Assertions.assertDoesNotThrow(
+        Assertions.assertDoesNotThrow(
                 () -> subscriber.onMessage(mockMessage("not json".getBytes()), null));
 
         verify(seatEmitterStore, never()).findByShowId(anyString());

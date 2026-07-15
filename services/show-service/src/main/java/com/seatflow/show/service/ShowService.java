@@ -5,9 +5,9 @@ import com.seatflow.common.event.EventEnvelope;
 import com.seatflow.common.event.EventTopic;
 import com.seatflow.common.event.show.ShowCreatedEvent;
 import com.seatflow.common.exception.BusinessException;
+import com.seatflow.show.domain.Outbox;
 import com.seatflow.show.domain.Show;
 import com.seatflow.show.exception.ShowErrorCode;
-import com.seatflow.show.domain.Outbox;
 import com.seatflow.show.repository.OutboxRepository;
 import com.seatflow.show.repository.ShowRepository;
 import com.seatflow.show.service.command.CreateShowCommand;
@@ -54,12 +54,12 @@ public class ShowService {
                 .seatGrades(command.seatGrades())
                 .createdAt(LocalDateTime.now())
                 .build();
-        showRepository.save(show);
+        show = showRepository.save(show);
 
         ShowCreatedEvent event = toEvent(show);
-        EventEnvelope<ShowCreatedEvent> envelope = EventEnvelope.of(
-                EventTopic.SHOW_CREATED, SOURCE, event);
 
+        EventEnvelope<ShowCreatedEvent> envelope = EventEnvelope.of(
+                EventTopic.SHOW_CREATED, event.eventVersion(), SOURCE, show.getId(), event);
         outboxRepository.save(Outbox.builder()
                 .eventId(envelope.eventId())
                 .eventType(EventTopic.SHOW_CREATED)

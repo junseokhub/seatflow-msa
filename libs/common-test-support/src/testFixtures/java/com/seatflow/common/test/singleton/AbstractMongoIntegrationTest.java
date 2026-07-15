@@ -15,7 +15,7 @@ public abstract class AbstractMongoIntegrationTest {
     protected static final MongoDBContainer MONGO;
 
     static {
-        MONGO = new MongoDBContainer("mongo:7.0")
+        MONGO = new MongoDBContainer("mongo:latest")
                 .withReuse(true);
         MONGO.start();
     }

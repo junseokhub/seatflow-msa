@@ -1,5 +1,7 @@
 package com.seatflow.common.event.payment;
 
+import com.seatflow.common.event.VersionedEvent;
+
 import java.math.BigDecimal;
 
 /**
@@ -10,4 +12,9 @@ public record PaymentRefundCommand(
         Long sagaId,
         Long reservationId,
         BigDecimal refundAmount
-) {}
+) implements VersionedEvent {
+    @Override
+    public String eventVersion() {
+        return "1.0";
+    }
+}

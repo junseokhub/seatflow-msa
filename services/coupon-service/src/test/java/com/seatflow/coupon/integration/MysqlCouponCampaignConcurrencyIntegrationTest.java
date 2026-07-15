@@ -2,7 +2,6 @@ package com.seatflow.coupon.integration;
 
 import com.seatflow.common.test.composition.MysqlContainerSupport;
 import com.seatflow.coupon.domain.CouponCampaign;
-import com.seatflow.coupon.repository.CouponCampaignRepository;
 import com.seatflow.coupon.repository.CouponRepository;
 import com.seatflow.coupon.service.CouponService;
 import org.junit.jupiter.api.DisplayName;
@@ -16,7 +15,10 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,12 +42,9 @@ class MysqlCouponCampaignConcurrencyIntegrationTest implements MysqlContainerSup
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-        registry.add("spring.flyway.enabled", () -> "false");
+        MysqlContainerSupport.registerMysqlProperties(registry);
     }
 
-    @Autowired
-    private CouponCampaignRepository campaignRepository;
     @Autowired
     private CouponRepository couponRepository;
     @Autowired

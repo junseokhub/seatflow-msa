@@ -1,5 +1,7 @@
 package com.seatflow.common.event.seat;
 
+import com.seatflow.common.event.VersionedEvent;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -13,4 +15,9 @@ public record SeatHeldEvent(
         Long seatId,
         BigDecimal price,
         LocalDateTime showDate
-) {}
+) implements VersionedEvent {
+    @Override
+    public String eventVersion() {
+        return "1.0";
+    }
+}

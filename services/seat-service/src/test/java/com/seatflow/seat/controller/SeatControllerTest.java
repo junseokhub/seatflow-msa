@@ -31,11 +31,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * 컨트롤러 계층만 검증한다. coupon-service에서 겪었던 함정 두 가지를 반영했다:
- * (1) @WebMvcTest가 메인 클래스를 자동 채택해 entityManagerFactory 등을 못 찾는
- *     문제 -> @ContextConfiguration으로 정확히 이 컨트롤러+SecurityConfig만 명시.
+ * (1) @WebMvcTest가 메인 클래스를 자동 채택해 entityManagerFactory 등을 못 찾는 문제
+ * -> @ContextConfiguration으로 정확히 이 컨트롤러+SecurityConfig만 명시.
  * (2) SecurityConfig가 요구하는 JwtAuthenticationFilter를 MockitoBean으로 채우고,
- *     체인을 통과시키는 스텁을 걸어야 필터 이후 authorizeHttpRequests 검증이
- *     정상 동작한다.
+ *     체인을 통과시키는 스텁을 걸어야 필터 이후 authorizeHttpRequests 검증이 정상 동작한다.
  */
 @WebMvcTest(controllers = SeatController.class)
 @ContextConfiguration(classes = {SeatController.class, SecurityConfig.class})

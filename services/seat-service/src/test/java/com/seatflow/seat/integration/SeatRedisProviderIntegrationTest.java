@@ -19,14 +19,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * SeatRedisProvider의 Lua 스크립트(HOLD_ALL, RELEASE_IF_OWNER)가 진짜 Redis 위에서
- * 원자적으로 동작하는지 검증한다. 특히 holdAll의 "전부 아니면 전무" 특성과, 여러
- * 좌석 조합을 두고 여러 사용자가 동시에 경쟁할 때 정확히 한 명만 성공하는지를
- * Mock으로는 검증할 수 없다 — 진짜 동시 요청이 필요하다.
+ * SeatRedisProvider의 Lua 스크립트(HOLD_ALL, RELEASE_IF_OWNER)가 진짜 Redis 위에서 원자적으로 동작하는지 검증한다.
+ * 특히 holdAll의 "전부 아니면 전무" 특성과, 여러 좌석 조합을 두고 여러 사용자가 동시에 경쟁할 때 정확히 한 명만 성공하는지를 Mock으로는 검증할 수 없다.
+ * 진짜 동시 요청이 필요하다.
  *
- * 이 테스트가 검증하려는 건 Redis뿐이지만, seat-service의 전체 스프링 컨텍스트가
- * JPA/DataSource 자동 설정을 갖고 있어 MySQL 연결 정보 없이는 컨텍스트 자체가
- * 뜨지 않는다 — MysqlContainerSupport를 같이 포함시켜 컨텍스트 로딩만 성립시킨다.
+ * 이 테스트가 검증하려는 건 Redis뿐이지만, seat-service의 전체 스프링 컨텍스트가 JPA/DataSource 자동 설정을 갖고 있어
+ * MySQL 연결 정보 없이는 컨텍스트 자체가 뜨지 않는다.
+ * MysqlContainerSupport를 같이 포함시켜 컨텍스트 로딩만 성립시킨다.
  */
 @Testcontainers
 @ActiveProfiles("test")
@@ -35,8 +34,8 @@ class SeatRedisProviderIntegrationTest implements MysqlContainerSupport, RedisCo
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-        registry.add("spring.flyway.enabled", () -> "false");
+        RedisContainerSupport.registerDefaultProperties(registry);
+        MysqlContainerSupport.registerMysqlProperties(registry);
     }
 
     @Autowired
