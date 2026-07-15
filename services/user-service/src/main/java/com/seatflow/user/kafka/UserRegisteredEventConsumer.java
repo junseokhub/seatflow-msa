@@ -23,8 +23,7 @@ import org.springframework.stereotype.Component;
  *     ...
  *     userService.createUser(payload.userId(), payload.email(), payload.name());
  *
- *     → 별도 처리 불필요. createUser 내부에서 예외를 잡아 조용히 삼키므로
- *       컨슈머는 그 결과를 신경 쓸 필요가 없다.
+ *     -> 별도 처리 불필요. createUser 내부에서 예외를 잡아 조용히 삼키므로 컨슈머는 그 결과를 신경 쓸 필요가 없다.
  *
  * ───────────────────────────────────────────────────────────────
  * [1] save + catch
@@ -33,10 +32,10 @@ import org.springframework.stereotype.Component;
  *     ...
  *     userService.createUser(payload.userId(), payload.email(), payload.name());
  *
- *     → UserServiceSaveAndCatch.createUser() 내부에서 이미 예외를 잡으므로,
- *       호출부(컨슈머)는 [4]와 동일하게 그대로 호출하면 된다. 다만 이 방식은
- *       "컨슈머에 별도 @Transactional이 걸려 있지 않다"는 전제에서만 안전하다
- *       — 이 컨슈머 메서드 자체에 트랜잭션이 없으므로 지금은 조건이 충족된다.
+ *     -> UserServiceSaveAndCatch.createUser() 내부에서 이미 예외를 잡으므로,
+ *       호출부(컨슈머)는 [4]와 동일하게 그대로 호출하면 된다.
+ *       다만 이 방식은 컨슈머에 별도 @Transactional이 걸려 있지 않다는 전제에서만 안전하다/
+ *       이 컨슈머 메서드 자체에 트랜잭션이 없으므로 지금은 조건이 충족된다.
  *
  * ───────────────────────────────────────────────────────────────
  * [2] INSERT IGNORE
@@ -45,8 +44,7 @@ import org.springframework.stereotype.Component;
  *     ...
  *     userService.createUser(payload.userId(), payload.email(), payload.name());
  *
- *     → 이것도 호출부는 동일하다. 예외 자체가 나지 않는 방식이라 try-catch가
- *       원천적으로 필요 없다.
+ *     -> 이것도 호출부는 동일하다. 예외 자체가 나지 않는 방식이라 try-catch가 원천적으로 필요 없다.
  *
  * ───────────────────────────────────────────────────────────────
  * [3] REQUIRES_NEW
@@ -55,21 +53,18 @@ import org.springframework.stereotype.Component;
  *     ...
  *     userService.createUser(payload.userId(), payload.email(), payload.name());
  *
- *     → 호출부는 동일하다. 다만 매 호출마다 새 트랜잭션을 여는 비용이 있다는
- *       차이는 호출부 코드에는 드러나지 않는다(서비스 내부 구현 차이).
+ *     -> 호출부는 동일하다. 다만 매 호출마다 새 트랜잭션을 여는 비용이 있다는 차이는 호출부 코드에는 드러나지 않는다(서비스 내부 구현 차이).
  *
  * ───────────────────────────────────────────────────────────────
  * [Inbox] IdempotentEventProcessor 기반
  *
  *     private final UserServiceInboxPattern userService;
  *     ...
- *     // 이 방식만 유일하게 eventId를 함께 넘겨야 한다 — 처리 이력을
- *     // (consumerGroup, eventId)로 추적하기 때문이다. EventEnvelope가 이미
- *     // eventId를 갖고 있으므로 그대로 꺼내 넘기면 된다.
+ *     // 이 방식만 유일하게 eventId를 함께 넘겨야 한다.
+ *     // 처리 이력을  (consumerGroup, eventId)로 추적하기 때문이다. EventEnvelope가 이미 eventId를 갖고 있으므로 그대로 꺼내 넘기면 된다.
  *     userService.createUser(event.eventId(), payload.userId(), payload.email(), payload.name());
  *
- *     → 다른 세 방식과 메서드 시그니처 자체가 다르다(eventId 파라미터 추가)는
- *       점이 갈아끼울 때 유일하게 호출부 수정이 필요한 지점이다.
+ *     -> 다른 세 방식과 메서드 시그니처 자체가 다르다(eventId 파라미터 추가)는 점이 갈아끼울 때 유일하게 호출부 수정이 필요한 지점이다.
  * ───────────────────────────────────────────────────────────────
  */
 @Slf4j

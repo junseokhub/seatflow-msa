@@ -25,8 +25,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * NOTE: GlobalExceptionHandler를 @ContextConfiguration에 추가해야 BusinessException이
- * 의도한 상태코드(403 등)로 변환된다 — reservation/payment/auth에서 반복 확인한 패턴.
+ * GlobalExceptionHandler를 @ContextConfiguration에 추가해야 BusinessException이 의도한 상태코드(403 등)로 변환된다.
+ * reservation/payment/auth에서 반복 확인한 패턴.
  */
 @WebMvcTest(controllers = UserController.class)
 @ContextConfiguration(classes = {

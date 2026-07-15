@@ -74,7 +74,7 @@ public class Reservation {
     }
 
     /**
-     * 결제 완료(payment.completed)로 예매를 확정한다(PENDING → CONFIRMED).
+     * 결제 완료(payment.completed)로 예매를 확정한다(PENDING ->CONFIRMED).
      * 이미 확정이면 멱등하게 무시하고, 취소된 예매는 확정할 수 없다.
      */
     public void confirm() {
@@ -105,7 +105,7 @@ public class Reservation {
 
 
     /**
-     * 결제 전 즉시 취소(PENDING → CANCELLED). Saga 없이 직접 확정한다.
+     * 결제 전 즉시 취소(PENDING ->CANCELLED). Saga 없이 직접 확정한다.
      */
     public void cancelPending() {
         if (this.status != ReservationStatus.PENDING) {
@@ -116,7 +116,7 @@ public class Reservation {
     }
 
     /**
-     * 취소 Saga 보상 완료로 예매를 원상복구한다(CANCELLING → CONFIRMED).
+     * 취소 Saga 보상 완료로 예매를 원상복구한다(CANCELLING ->CONFIRMED).
      * 환불이 실패해 좌석을 다시 점유시켰으니, 예매도 확정 상태로 되돌린다.
      * CANCELLING이 아니면(이미 처리된 중복 호출) 조용히 무시한다.
      */

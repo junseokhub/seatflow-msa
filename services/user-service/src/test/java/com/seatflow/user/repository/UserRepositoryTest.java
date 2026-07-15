@@ -57,14 +57,15 @@ class UserRepositoryTest implements MysqlContainerSupport {
     }
 
     @Test
-    @DisplayName("같은 id(PK)로 save()를 두 번 하면 예외 없이 UPDATE(merge)로 처리된다 — INSERT 충돌이 아니다")
+    @DisplayName("같은 id(PK)로 save()를 두 번 하면 예외 없이 UPDATE(merge)로 처리된다 - INSERT 충돌이 아니다")
     void savingSameIdTwiceMergesInsteadOfThrowing() {
-        // User.id는 @GeneratedValue가 아니라 애플리케이션이 직접 지정하는 값이다.
-        // Hibernate는 save() 호출 시 "이 id를 가진 엔티티가 이미 있으면" INSERT가
-        // 아니라 UPDATE(merge)로 처리한다 — 그래서 PK 중복은 save()로는 예외를
-        // 재현할 수 없다(실제로 겪었다). unique 제약 위반을 확인하려면 email처럼
-        // @GeneratedValue가 아닌 다른 unique 컬럼으로 검증해야 한다(아래
-        // duplicateEmailViolatesUniqueConstraint 참고).
+        /**
+         * User.id는 @GeneratedValue가 아니라 애플리케이션이 직접 지정하는 값이다.
+         * Hibernate는 save() 호출 시 이 id를 가진 엔티티가 이미 있으면 INSERT가 아니라 UPDATE(merge)로 처리한다.
+         * 그래서 PK 중복은 save()로는 예외를 재현할 수 없다(실제로 겪었다).
+         * unique 제약 위반을 확인하려면 email처럼 @GeneratedValue가 아닌 다른 unique 컬럼으로 검증해야 한다.
+         * 아래 duplicateEmailViolatesUniqueConstraint 참고
+         */
         userRepository.save(user("user-1", "test@example.com"));
         userRepository.flush();
 

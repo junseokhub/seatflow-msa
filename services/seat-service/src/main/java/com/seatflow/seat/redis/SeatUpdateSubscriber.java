@@ -21,7 +21,7 @@ public class SeatUpdateSubscriber implements MessageListener {
     private final SeatEmitterStore seatEmitterStore;
     private final ObjectMapper objectMapper;
 
-    // Redis 채널에서 받아 → 이 pod에 붙은 연결들에 push
+    // Redis 채널에서 받아 ->이 pod에 붙은 연결들에 push
     @Override
     public void onMessage(Message message, byte[] pattern) {
         try {

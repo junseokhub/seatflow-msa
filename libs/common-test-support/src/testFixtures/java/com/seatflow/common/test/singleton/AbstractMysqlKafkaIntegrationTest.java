@@ -1,10 +1,11 @@
 package com.seatflow.common.test.singleton;
 
-// MySQL + Kafka만 필요한 서비스(reservation-service, user-service)가 상속한다.
-// reservation-service는 여기에 더해 Saga 통합 테스트(17편)에서 더 세밀한 흐름
-// 검증이 필요할 수 있는데, 그건 이 클래스를 상속한 뒤 테스트 코드에서 실제
-// 이벤트를 발행/구독하는 식으로 다룬다 — 베이스 클래스 자체는 인프라 기동까지만
-// 책임진다.
+/**
+ * MySQL + Kafka만 필요한 서비스(reservation-service, user-service)가 상속한다.
+ * reservation-service는 여기에 더해 Saga 통합 테스트(17편)에서 더 세밀한 흐름 검증이 필요할 수 있는데,
+ * 그것은 이 클래스를 상속한 뒤 테스트 코드에서 실제 이벤트를 발행/구독하는 식으로 다룬다.
+ * 베이스 클래스 자체는 인프라 기동까지만 책임진다.
+ */
 
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;

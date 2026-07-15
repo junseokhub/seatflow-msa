@@ -91,7 +91,7 @@ public class SeatGenerationService {
         return seats;
     }
 
-    /** 행 인덱스(0-base) → 레이블: A, B, ..., Z, AA, AB, ... */
+    /** 행 인덱스(0-base) ->레이블: A, B, ..., Z, AA, AB, ... */
     private static String rowLabel(int idx) {
         StringBuilder sb = new StringBuilder();
         do {

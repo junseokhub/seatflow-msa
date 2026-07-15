@@ -8,10 +8,10 @@ import java.time.LocalDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Outbox는 상태 전이 메서드가 없는 순수 데이터 구조다 — 상태 전이는
- * MongoOutboxStore가 findAndModify로 원자적으로 수행하므로(더티체킹 방식이아님),
- * 이 도메인 자체가 검증할 로직은 "생성자가 초기값을 정확히 채우는가"뿐이다.
- * 실제 상태 전이(PENDING→PUBLISHING→PUBLISHED/FAILED)는 MongoOutboxStoreIntegrationTest에서 이미 검증했다.
+ * Outbox는 상태 전이 메서드가 없는 순수 데이터 구조다.
+ * 상태 전이는 MongoOutboxStore가 findAndModify로 원자적으로 수행하므로(더티체킹 방식이아님),
+ * 이 도메인 자체가 검증할 로직은 생성자가 초기값을 정확히 채우나 알뿐이다.
+ * 실제 상태 전이(PENDING -> PUBLISHING -> PUBLISHED/FAILED)는 MongoOutboxStoreIntegrationTest에서 이미 검증했다.
  */
 class OutboxTest {
 

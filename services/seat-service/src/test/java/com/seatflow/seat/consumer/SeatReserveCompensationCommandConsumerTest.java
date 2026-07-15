@@ -56,7 +56,7 @@ class SeatReserveCompensationCommandConsumerTest {
     }
 
     @Test
-    @DisplayName("보상 처리 중 예외가 나도 컨슈머가 삼키고 로그만 남긴다 — 보상의 보상은 없다")
+    @DisplayName("보상 처리 중 예외가 나도 컨슈머가 삼키고 로그만 남긴다 - 보상의 보상은 없다")
     void compensationFailureIsSwallowed() {
         String validMessage = """
                 {
@@ -71,8 +71,10 @@ class SeatReserveCompensationCommandConsumerTest {
         doThrow(new RuntimeException("unexpected failure"))
                 .when(seatService).reserveSeatForCompensation(1L, 2L, "show-1", 3L);
 
-        // 이 실패는 CancelSaga가 COMPENSATING에 멈춘 채로 남는, 사람이 개입해야 하는
-        // 최종 실패 케이스로 의도적으로 다룬다 — 컨슈머 자체는 죽지 않아야 한다.
+        /**
+         * 이 실패는 CancelSaga가 COMPENSATING에 멈춘 채로 남는, 사람이 개입해야 하는 최종 실패 케이스로 의도적으로 다룬다.
+         * 컨슈머 자체는 죽지 않아야 한다.
+         */
         org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> consumer.consume(validMessage));
     }
 }

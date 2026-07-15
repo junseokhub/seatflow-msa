@@ -97,8 +97,8 @@ class DefaultMysqlCouponServiceTest {
                     .isInstanceOf(BusinessException.class)
                     .hasMessage(CouponErrorCode.ALREADY_ISSUED.getMessage());
 
-            // RedisCouponService와 핵심 차이 — 여기는 재고 복원 메서드 자체가 없다.
-            // 이미 차감된 재고는 정당하게 이 요청이 차지한 몫이라는 설계 원칙 때문이다.
+            // RedisCouponService와 핵심 차이
+            // 여기는 재고 복원 메서드 자체가 없다. 이미 차감된 재고는 정당하게 이 요청이 차지한 몫이라는 설계 원칙 때문이다.
         }
 
         @Test
@@ -135,7 +135,7 @@ class DefaultMysqlCouponServiceTest {
     class CreateCampaign {
 
         @Test
-        @DisplayName("캠페인을 저장만 한다 (Redis 재고 초기화 없음 — MySQL 전용 구현이므로)")
+        @DisplayName("캠페인을 저장만 한다 (Redis 재고 초기화 없음 - MySQL 전용 구현이므로)")
         void savesCampaignWithoutRedis() {
             given(campaignRepository.save(any(CouponCampaign.class))).willReturn(activeCampaign);
 

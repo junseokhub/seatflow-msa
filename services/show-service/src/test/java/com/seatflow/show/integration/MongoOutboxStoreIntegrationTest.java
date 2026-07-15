@@ -16,8 +16,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.LocalDateTime;
@@ -35,14 +33,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class MongoOutboxStoreIntegrationTest implements MongoContainerSupport {
 
-    static {
-        MongoContainerSupport.startContainer();
-    }
-
-    @DynamicPropertySource
-    static void mongoProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.data.mongodb.uri", MongoContainerSupport.MONGO::getReplicaSetUrl);
-    }
     @Autowired
     private MongoOutboxStore outboxStore;
     @Autowired
@@ -193,10 +183,11 @@ class MongoOutboxStoreIntegrationTest implements MongoContainerSupport {
     @DisplayName("markFailedOrRetry()는 MAX_RETRY에 도달하면 FAILED로 격리한다")
     void markFailedOrRetryIsolatesAtMaxRetry() {
         Outbox outbox = pendingOutbox("event-1");
-        // markFailedOrRetry()는 "증가 전" retryCount로 isExceeded()를 판단한다
-        // (증가는 재시도 경로에서만 일어남). 그러니 MAX_RETRY 그 자체로 세팅해야
-        // FAILED 분기를 정확히 태울 수 있다 — MAX_RETRY - 1로는 아직 재시도
-        // 경로(PENDING)를 탄다는 걸 실제로 겪었다.
+        /**
+         * markFailedOrRetry()는 증가 전 retryCount로 isExceeded()를 판단한다(증가는 재시도 경로에서만 일어남).
+         * 그러니 MAX_RETRY 그 자체로 세팅해야 FAILED 분기를 정확히 태울 수 있다.
+         * MAX_RETRY - 1로는 아직 재시도 경로(PENDING)를 탄다는 걸 실제로 겪었다.
+         */
         mongoTemplate.updateFirst(
                 new Query(Criteria.where("_id").is(outbox.getId())),
                 new Update().set("retryCount", com.seatflow.show.outbox.OutboxBackoff.MAX_RETRY)

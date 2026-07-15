@@ -361,7 +361,8 @@ class DefaultRedisCouponServiceTest {
             given(couponRepository.findByReservationId(999L)).willReturn(Optional.empty());
 
             couponService.confirmUse(999L);
-            // 예외 없이 끝나면 성공 — 별도 verify 불필요, 그냥 조용히 넘어가는 게 정상 동작이다.
+            // 예외 없이 끝나면 성공
+            // 별도 verify 불필요, 그냥 조용히 넘어가는 게 정상 동작이다.
         }
     }
 

@@ -25,9 +25,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 
 /**
- * 결제 본체. reservation 금액·상태 검증(2층 일부), 쿠폰 검증/할인 계산, 중복 COMPLETED
- * 차단(부분 unique, 2층)을 담당한다. 인프라 레벨 멱등성(1층, Redis 키)은 PaymentFacade가
- * 이 메서드를 감싸 처리한다.
+ * 결제 본체
+ *
+ * reservation 금액,상태 검증(2레이어 일부), 쿠폰 검증/할인 계산, 중복 COMPLETED 차단(부분 unique, 2레이어)을 담당한다.
+ * 인프라 레벨 멱등성(1레이어, Redis 키)은 PaymentFacade가 이 메서드를 감싸 처리한다.
  */
 @Slf4j
 @Service
@@ -66,8 +67,8 @@ public class DefaultPaymentService implements PaymentService {
                             PaymentErrorCode.PAYMENT_ALREADY_COMPLETED.getMessage());
                 });
 
-        // 쿠폰 검증 -> 할인 계산. PG(mock)를 부르기 *전에* 최종 금액을 확정한다.
-        // PG는 할인 개념을 몰라도 되고 몰라야 한다 — payAmount만 받아 처리한다.
+        // 쿠폰 검증 -> 할인 계산. PG(mock)를 부르기 전에 최종 금액을 확정한다.
+        // PG는 할인 개념을 몰라도 되고 몰라야 한다. payAmount만 받아 처리한다.
         BigDecimal payAmount = reservation.amount();
         BigDecimal discountAmount = BigDecimal.ZERO;
         if (command.couponId() != null) {
@@ -111,7 +112,7 @@ public class DefaultPaymentService implements PaymentService {
             log.info("Payment completed: paymentNumber={}", payment.getPaymentNumber());
         } else {
             payment.fail();
-            // 쿠폰은 아직 확정 안 했으므로(성공 시에만 confirm) 별도 롤백이 필요 없다 —
+            // 쿠폰은 아직 확정 안 했으므로(성공 시에만 confirm) 별도 롤백이 필요 없다.
             // coupon-service 쪽 상태가 애초에 안 바뀌었다.
             outboxAppender.append(EventTopic.PAYMENT_FAILED, SOURCE, command.userId(),
                     new PaymentFailedEvent(command.reservationId(), command.userId(), payAmount));
@@ -144,10 +145,12 @@ public class DefaultPaymentService implements PaymentService {
         try {
             couponClient.confirmCoupon(couponId, userId, reservationId);
         } catch (Exception e) {
-            // 결제(PG)는 이미 성공했으므로 여기서 예외를 던져 트랜잭션을 롤백시키면 안 된다.
-            // "결제는 됐는데 쿠폰 확정만 실패"한 상태가 되더라도, 돈이 이미 나간 사용자의
-            // 결제를 되돌리는 것보다 로그로 남기고 운영에서 확인하는 게 안전하다 —
-            // 13편에서 정한 "보상마저 실패하면 사람이 봐야 한다" 원칙과 같은 층의 판단이다.
+            /**
+             * 결제(PG)는 이미 성공했으므로 여기서 예외를 던져 트랜잭션을 롤백시키면 안 된다.
+             * 결제는 됐는데 쿠폰 확정만 실패한 상태가 되더라도,
+             * 돈이 이미 나간 사용자의 결제를 되돌리는 것보다 로그로 남기고 운영에서 확인하는 게 안전하다.
+             * 13편에서 정한 보상마저 실패하면 사람이 봐야 한다 원칙과 같은 층의 판단이다.
+             */
             log.error("Coupon confirm failed after successful payment, needs manual check: " +
                     "couponId={}, reservationId={}", couponId, reservationId, e);
         }
@@ -184,12 +187,11 @@ public class DefaultPaymentService implements PaymentService {
 
     /**
      * 취소 Saga의 환불 명령을 처리한다. 결제한 수단(PaymentStrategy)으로 환불을 라우팅하고,
-     * 쿠폰을 썼던 결제면 환불 성공 직후 쿠폰도 같이 복원한다. 결과에 따라 성공/실패 응답을
-     * 발행한다.
+     * 쿠폰을 썼던 결제면 환불 성공 직후 쿠폰도 같이 복원한다.
+     * 결과에 따라 성공/실패 응답을 발행한다.
      *
-     * 멱등성: Payment.refund()가 이미 REFUNDED면 무시하는 상태 가드다. 다만 같은 명령이
-     * 중복 도착해 이미 REFUNDED 처리된 뒤라면, 응답도 다시 성공으로 발행해 오케스트레이터가
-     * 놓친 응답을 다시 받을 수 있게 한다(at-least-once 전제).
+     * 멱등성: Payment.refund()가 이미 REFUNDED면 무시하는 상태 가드다.
+     * 다만 같은 명령이 중복 도착해 이미 REFUNDED 처리된 뒤라면, 응답도 다시 성공으로 발행해 오케스트레이터가 놓친 응답을 다시 받을 수 있게 한다(at-least-once 전제).
      */
     @Transactional
     public void executeRefund(Long sagaId, Long reservationId, BigDecimal refundAmount) {
@@ -220,8 +222,8 @@ public class DefaultPaymentService implements PaymentService {
             payment.refund(refundAmount);
 
             if (payment.getCouponId() != null) {
-                // 환불 성공 직후 같은 서비스 안에서 바로 쿠폰 복원. reservation은
-                // 쿠폰의 존재 자체를 몰라도 된다 — 쿠폰 도메인 지식은 payment 안에만 있다.
+                // 환불 성공 직후 같은 서비스 안에서 바로 쿠폰 복원.
+                // reservation은 쿠폰의 존재 자체를 몰라도 된다. 쿠폰 도메인 지식은 payment 안에만 있다.
                 try {
                     couponClient.restoreCoupon(reservationId);
                 } catch (Exception e) {

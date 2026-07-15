@@ -73,12 +73,12 @@ public class Payment {
     }
 
     /**
-     * 환불 완료 처리(COMPLETED → REFUNDED). 실제 환불액을 기록한다.
+     * 환불 완료 처리(COMPLETED ->REFUNDED). 실제 환불액을 기록한다.
      * 완료된 결제만 환불할 수 있고, 이미 REFUNDED면 멱등하게 무시한다(중복 환불 요청 대비).
      */
     public void refund(BigDecimal refundedAmount) {
         if (this.status == PaymentStatus.REFUNDED) {
-            return;   // 이미 환불 → 멱등 무시
+            return;   // 이미 환불 ->멱등 무시
         }
         if (this.status != PaymentStatus.COMPLETED) {
             throw new IllegalStateException(

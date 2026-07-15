@@ -9,8 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.List;
@@ -19,26 +17,19 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * OutboxRepository는 커스텀 쿼리가 없는 순수 MongoRepository라 검증할 분기
- * 로직 자체는 없다. 그래도 다음 두 가지는 확인해둘 가치가 있다:
- *   1. Outbox 문서가 실제로 저장/조회 가능한 구조인지 (필드 매핑 문제 조기 발견)
- *   2. @PrePersist류의 초기값(status=PENDING, retryCount=0 등)이 실제로
- *      MongoDB 저장 시 정상 반영되는지 — MongoOutboxStoreIntegrationTest가
- *      이미 간접 검증하지만, 이 계층만 따로 최소 확인해두면 향후 커스텀
- *      쿼리가 추가될 때 이 파일에 이어서 검증을 붙이기 쉬워진다.
+ * OutboxRepository는 커스텀 쿼리가 없는 순수 MongoRepository라 검증할 분기 로직 자체는 없다.
+ * 그래도 다음 두 가지는 확인해둘 가치가 있다:
+ *
+ * 1) Outbox 문서가 실제로 저장/조회 가능한 구조인지 (필드 매핑 문제 조기 발견)</li>
+ * 2) @PrePersist류의 초기값(status=PENDING, retryCount=0 등)이 실제로 MongoDB 저장 시 정상 반영되는지
+ * MongoOutboxStoreIntegrationTest가 이미 간접 검증하지만,
+ * 이 계층만 따로 최소 확인해두면 향후 커스텀 쿼리가 추가될 때 이 파일에 이어서 검증을 붙이기 쉬워진다.</li>
+ *
  */
 @Testcontainers
 @ActiveProfiles("test")
 @SpringBootTest
 class OutboxRepositoryTest implements MongoContainerSupport {
-    static {
-        MongoContainerSupport.startContainer();
-    }
-
-    @DynamicPropertySource
-    static void mongoProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.data.mongodb.uri", MongoContainerSupport.MONGO::getReplicaSetUrl);
-    }
 
     @Autowired
     private OutboxRepository outboxRepository;

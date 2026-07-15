@@ -41,8 +41,9 @@ public class ShowService {
     }
 
     /**
-     * 공연 생성. Show 저장과 show.created 이벤트의 Outbox 적재를 한 트랜잭션으로 묶는다.
-     * (MongoTransactionManager + replica set 필요 — dual-write 방지)
+     * 공연 생성.
+     * Show 저장과 show.created 이벤트의 Outbox 적재를 한 트랜잭션으로 묶는다.
+     * (MongoTransactionManager + replica set 필요 , dual-write 방지)
      * seat-service가 이 이벤트를 받아 등급별 좌석을 생성한다.
      */
     @Transactional
@@ -70,7 +71,7 @@ public class ShowService {
         return show;
     }
 
-    /** 제목·공연장·공연일 수정 (null 필드는 기존 값 유지). seatGrades는 변경 불가. */
+    // 제목·공연장·공연일 수정 (null 필드는 기존 값 유지). seatGrades는 변경 불가.
     @Transactional
     public Show updateShow(String id, String title, String venue, LocalDateTime showDate) {
         Show show = getShow(id);
@@ -78,7 +79,7 @@ public class ShowService {
         return showRepository.save(show);
     }
 
-    /** 공연 삭제. 좌석은 seat-service가 별도 관리하므로 여기서는 show 문서만 제거한다. */
+    // 공연 삭제. 좌석은 seat-service가 별도 관리하므로 여기서는 show 문서만 제거한다.
     @Transactional
     public void deleteShow(String id) {
         if (!showRepository.existsById(id)) {

@@ -32,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * ReservationController는 SecurityConfig가 anyRequest().authenticated()라서
- * 모든 API가 인증을 요구한다(공개 조회가 없음 — 예매 정보는 항상 개인정보).
+ * 모든 API가 인증을 요구한다(공개 조회가 없음,  예매 정보는 항상 개인정보).
  */
 @WebMvcTest(controllers = ReservationController.class)
 @ContextConfiguration(classes = {ReservationController.class, SecurityConfig.class, GlobalExceptionHandler.class})

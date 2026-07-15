@@ -16,9 +16,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 /**
- * Redis pub/sub 메시지를 받아 SSE로 전달하는 컴포넌트. 처음엔 "그냥 받아서 흘려
- * 보내는 것"이라 skip했지만, 실제로는 (1) 메시지 파싱 실패, (2) 개별 emitter 전송
- * 실패 두 개의 실패 분기가 있다 — SeatSseNotifier와 거의 같은 구조다.
+ * Redis pub/sub 메시지를 받아 SSE로 전달하는 컴포넌트.
+ * 처음엔 그냥 받아서 흘려 보내는 것이라 skip했지만, 실제로는 (1) 메시지 파싱 실패, (2) 개별 emitter 전송
+ * 실패 두 개의 실패 분기가 있다.
+ * SeatSseNotifier와 거의 같은 구조다.
  */
 class SeatUpdateSubscriberTest {
 

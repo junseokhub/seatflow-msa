@@ -19,9 +19,9 @@ import static org.mockito.Mockito.verify;
 
 /**
  * [3] REQUIRES_NEW 방식의 분기 로직 자체는 [1]과 동일하다(예외를 잡아서 삼킨다).
- * 다만 Mock 단위 테스트로는 "진짜 새 트랜잭션이 열렸는지, 그 트랜잭션만
- * 롤백됐는지"는 검증할 수 없다 — 그건 IdempotencyStrategyComparisonIntegrationTest
- * (진짜 DB)의 영역이다. 여기서는 [1]과 마찬가지로 예외 삼킴/전파 분기만 확인한다.
+ * 다만 Mock 단위 테스트로는 진짜 새 트랜잭션이 열렸는지, 그 트랜잭션만 롤백됐는지는 검증할 수 없다.
+ * 그건 IdempotencyStrategyComparisonIntegrationTest (진짜 DB)의 영역이다.
+ * 여기서는 [1]과 마찬가지로 예외 삼킴/전파 분기만 확인한다.
  */
 @ExtendWith(MockitoExtension.class)
 class UserServiceRequiresNewTest {

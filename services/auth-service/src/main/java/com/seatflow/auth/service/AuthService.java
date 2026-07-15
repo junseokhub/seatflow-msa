@@ -50,7 +50,7 @@ public class AuthService {
 
         credentialsRepository.save(credentials);
 
-        // Outbox에 적재 (같은 트랜잭션 → dual-write 제거)
+        // Outbox에 적재 (같은 트랜잭션 ->dual-write 제거)
         outboxAppender.append(
                 EventTopic.USER_REGISTERED,
                 "auth-service",

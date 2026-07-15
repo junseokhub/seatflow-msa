@@ -16,11 +16,9 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 
 /**
- * UserServiceInboxPattern은 IdempotentEventProcessor에게 실제 판단(선점 성공
- * 여부)을 완전히 위임하므로, 이 서비스 자체의 단위 테스트는 "IdempotentEventProcessor에
- * 정확한 인자로 위임하는가"만 확인하면 충분하다 — 선점 성공/실패에 따른 분기
- * 로직 자체는 이미 IdempotentEventProcessorTest에서 검증했으므로 여기서 중복
- * 검증하지 않는다.
+ * UserServiceInboxPattern은 IdempotentEventProcessor에게 실제 판단(선점 성공 여부)을 완전히 위임하므로,
+ * 이 서비스 자체의 단위 테스트는 IdempotentEventProcessor에 정확한 인자로 위임하는가만 확인하면 충분하다.
+ * 선점 성공/실패에 따른 분기 로직 자체는 이미 IdempotentEventProcessorTest에서 검증했으므로 여기서 중복 검증하지 않는다.
  */
 @ExtendWith(MockitoExtension.class)
 class UserServiceInboxPatternTest {

@@ -67,12 +67,13 @@ class SeatEmitterStoreTest {
                 () -> store.remove("unknown-show", someEmitter));
     }
 
-    // emitter.onCompletion/onTimeout/onError 콜백이 실제로 remove()를 호출하는지는
-    // 여기서 검증하지 않는다. SseEmitter의 콜백은 서블릿 컨테이너의 비동기 디스패치
-    // 메커니즘에 의존해 트리거되는데, 순수 단위 테스트 환경(서블릿 컨테이너 없음)
-    // 에서는 emitter.complete()를 호출해도 콜백이 실행된다는 보장이 없어 테스트가
-    // 불안정(flaky)해진다 — 처음에 이 검증을 시도했다가 정확히 이 이유로 실패를
-    // 겪었다. 콜백이 실제로 트리거되는지는 SeatController를 실제 서블릿 컨테이너
-    // 위에서 띄우는 통합/E2E 테스트의 영역이며, create()가 onCompletion 등록
-    // 자체를 빠뜨리지 않았는지는 코드 리뷰로 확인하는 게 더 적절하다.
+/**
+ * emitter.onCompletion/onTimeout/onError 콜백이 실제로 remove()를 호출하는지는 여기서 검증하지 않는다.
+ * SseEmitter의 콜백은 서블릿 컨테이너의 비동기 디스패치 메커니즘에 의존해 트리거되는데,
+ * 순수 단위 테스트 환경(서블릿 컨테이너 없음) 에서는 emitter.complete()를 호출해도 콜백이 실행된다는 보장이 없어 테스트가 불안정(flaky)해진다.
+ *
+ * 처음에 이 검증을 시도했다가 정확히 이 이유로 실패를 겪었다.
+ * 콜백이 실제로 트리거되는지는 SeatController를 실제 서블릿 컨테이너 위에서 띄우는 통합/E2E 테스트의 영역이며,
+ * create()가 onCompletion 등록 자체를 빠뜨리지 않았는지는 코드 리뷰로 확인하는 게 더 적절하다.
+ */
 }

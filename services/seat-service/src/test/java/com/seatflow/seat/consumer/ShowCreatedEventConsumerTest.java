@@ -16,10 +16,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 /**
- * 컨슈머의 "판단" 부분(malformed 메시지면 예외를 던져 DLQ로 보내지게 하는 것,
- * 정상이면 서비스에 위임하는 것)만 검증한다. 진짜 Kafka를 띄워 메시지를 보내는
- * 것까지는 이 테스트의 목적이 아니다 — ObjectMapper의 역직렬화 실패를 인위적으로
- * 재현해 "이 경우 정확히 예외를 던지는가"만 확인한다.
+ * 컨슈머의 판단 부분(malformed 메시지면 예외를 던져 DLQ로 보내지게 하는 것, 정상이면 서비스에 위임하는 것)만 검증한다.
+ * 진짜 Kafka를 띄워 메시지를 보내는 것까지는 이 테스트의 목적이 아니다.
+ * ObjectMapper의 역직렬화 실패를 인위적으로 재현해 이 경우 정확히 예외를 던지는가만 확인한다.
  */
 @ExtendWith(MockitoExtension.class)
 class ShowCreatedEventConsumerTest {
@@ -73,11 +72,12 @@ class ShowCreatedEventConsumerTest {
                 { "payload": { "showId": "show-1" } }
                 """;
 
-        // JSON 문법 자체는 유효해서 ObjectMapper 파싱은 성공하지만(malformed 체크
-        // 통과), showDate/grades가 null인 "의미적으로 불완전한" 메시지다. 원래는
-        // 이 상태로 SeatGenerationService까지 넘어가 NPE가 났었다 — 컨슈머에
-        // 필수 필드 검증을 추가해, 이제는 명확한 IllegalStateException으로
-        // 걸러지고 SeatGenerationService는 아예 호출되지 않는다.
+        /**
+         * JSON 문법 자체는 유효해서 ObjectMapper 파싱은 성공하지만(malformed 체크 통과),
+         * showDate/grades가 null인 의미적으로 불완전한 메시지다.
+         * 원래는 이 상태로 SeatGenerationService까지 넘어가 NPE가 났었다.
+         * 컨슈머에 필수 필드 검증을 추가해, 이제는 명확한 IllegalStateException으로 걸러지고 SeatGenerationService는 아예 호출되지 않는다.
+         */
         assertThrows(IllegalStateException.class, () -> consumer.consume(incompleteMessage));
 
         verify(seatGenerationService, never()).createSeats(any());

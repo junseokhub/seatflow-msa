@@ -24,7 +24,7 @@ coupon-service       쿠폰 캠페인, 선착순 발급
 | 영역 | 채택 | 비교한 대안 |
 |---|---|---|
 | 서비스 간 정합성 | Transactional Outbox | dual-write, `@TransactionalEventListener`, CDC(Debezium) |
-| Outbox 구현 | JPA 공통 모듈(common-outbox-jpa) | JPA/Mongo 포트-어댑터 추상화(초기) → 실사용 분포(JPA 4:Mongo 1) 기준 재조정 |
+| Outbox 구현 | JPA 공통 모듈(common-outbox-jpa) | JPA/Mongo 포트-어댑터 추상화(초기) ->실사용 분포(JPA 4:Mongo 1) 기준 재조정 |
 | 좌석 동시성 제어 | Redis + Lua 원자 연산 | DB 락, 분산 락(Redisson) |
 | 쿠폰 재고 동시성 제어 | 원자적 UPDATE(조건부 증가) + DB unique 제약 | 비관적 락, 애플리케이션 레벨 카운팅 |
 | 다중 서비스 트랜잭션(취소·환불) | Saga(Orchestration) | Choreography, 2PC |
@@ -36,7 +36,7 @@ coupon-service       쿠폰 캠페인, 선착순 발급
 | 서비스 간 동기 호출 장애 격리 | Resilience4j 서킷 브레이커 + 인증 헤더 전파(common-clients) | 재시도만, 타임아웃 없는 직접 호출 |
 | 시크릿 관리 | 비교 예정 | Vault, Kubernetes Secret |
 | CDC 실험 | Debezium(Outbox Event Router) | 비즈니스 테이블 직접 감시 vs Outbox 테이블 감시 |
-| 인프라 | Kubernetes, GitOps(Jenkins → ArgoCD, buildkit) | Strimzi Kaniko 빌드(아키텍처·권한 문제로 대체) |
+| 인프라 | Kubernetes, GitOps(Jenkins ->ArgoCD, buildkit) | Strimzi Kaniko 빌드(아키텍처·권한 문제로 대체) |
 | Language/Framework | Java 21, Spring Boot 3.5 | |
 | Messaging | Kafka(Strimzi, KRaft) | |
 | Storage | MySQL(서비스별 DB), MongoDB(show), Redis Cluster | |

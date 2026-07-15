@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 
 /**
  * 서비스 간 동기 호출(OpenFeign) 전용 API. payment-service가 결제 처리 흐름 안에서
- * validate(PG 호출 전) → confirm(PG 성공 후) 순서로 호출한다.
+ * validate(PG 호출 전) ->confirm(PG 성공 후) 순서로 호출한다.
  */
 @RestController
 @RequestMapping("/internal/coupons")

@@ -70,7 +70,7 @@ class CouponRedisFailureIntegrationTest implements MysqlContainerSupport {
         assertThatThrownBy(() -> couponService.issueCoupon(campaign.getId(), "user1"))
                 .hasMessageContaining(CouponErrorCode.REDIS_UNAVAILABLE.getMessage());
 
-        // MySQL에는 아무것도 저장되지 않아야 한다 — Fail-closed는 Redis 장애 시
-        // MySQL 경로로 넘어가지 않는다는 뜻이다.
+        // MySQL에는 아무것도 저장되지 않아야 한다.
+        // Fail-closed는 Redis 장애 시 MySQL 경로로 넘어가지 않는다는 뜻이다.
     }
 }

@@ -35,9 +35,9 @@ public class CouponPersister {
         couponRepository.save(coupon);
         couponRepository.flush();
 
-        // Coupon 저장과 같은 트랜잭션 안에서 Outbox에 기록한다. 이 트랜잭션이
-        // 커밋되면 둘 다 성공한 것이고, 롤백되면 둘 다(Coupon insert, outbox
-        // insert) 같이 롤백된다 — 부분 성공이 없다.
+        // Coupon 저장과 같은 트랜잭션 안에서 Outbox에 기록한다.
+        // 이 트랜잭션이 커밋되면 둘 다 성공한 것이고, 롤백되면 둘 다(Coupon insert, outbox insert) 같이 롤백된다.
+        // 부분 성공이 없다.
         outboxAppender.append(EventTopic.COUPON_ISSUED, SOURCE, userId,
                 new CouponIssuedEvent(coupon.getId(), campaignId, userId));
 
