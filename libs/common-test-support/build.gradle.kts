@@ -19,6 +19,6 @@ dependencies {
     testFixturesApi("org.testcontainers:kafka")
     testFixturesApi("org.testcontainers:mongodb")
     testFixturesApi("junit:junit")
-
+    testFixturesApi("org.springframework.kafka:spring-kafka-test")
     testImplementation("org.awaitility:awaitility:4.2.2")
 }
