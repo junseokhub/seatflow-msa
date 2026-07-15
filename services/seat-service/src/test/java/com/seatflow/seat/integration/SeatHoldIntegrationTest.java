@@ -34,10 +34,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class SeatHoldIntegrationTest implements MysqlContainerSupport, RedisContainerSupport {
 
-    @DynamicPropertySource
+     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        RedisContainerSupport.registerDefaultProperties(registry);
-        MysqlContainerSupport.registerMysqlProperties(registry);
+        MysqlContainerSupport.registerDefaultJpaProperties(registry);
     }
 
     @Autowired

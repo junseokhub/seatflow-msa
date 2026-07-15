@@ -25,10 +25,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class CancelSagaRepositoryTest implements MysqlContainerSupport {
 
-    @DynamicPropertySource
+     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-        registry.add("spring.flyway.enabled", () -> "false");
+        MysqlContainerSupport.registerDefaultJpaProperties(registry);
     }
 
     @Autowired

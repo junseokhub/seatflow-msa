@@ -1,6 +1,7 @@
 package com.seatflow.coupon.integration;
 
 import com.seatflow.common.test.composition.MysqlContainerSupport;
+import com.seatflow.common.test.composition.RedisContainerSupport;
 import com.seatflow.coupon.domain.CouponCampaign;
 import com.seatflow.coupon.repository.CouponRepository;
 import com.seatflow.coupon.service.CouponService;
@@ -24,25 +25,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * MysqlCouponService(9편 방식, 원자적 UPDATE)의 선착순 발급이 진짜 동시 요청
- * 상황에서 안전한지 검증한다.
+ * MysqlCouponService(9편 방식, 원자적 UPDATE)의 선착순 발급이 진짜 동시 요청 상황에서 안전한지 검증한다.
  *
- * CouponCampaignRepository.increaseIssuedQuantity()를 테스트에서 직접 호출하지
- * 않는다 — Repository 메서드 자체에는 트랜잭션을 걸지 않는 게 원칙이고(트랜잭션
- * 경계는 서비스 계층의 책임), Repository를 트랜잭션 없이 직접 호출하면
- * InvalidDataAccessApiUsageException이 난다(직접 겪었다). 대신 이미 @Transactional이
- * 걸려 있는 MysqlCouponService.issueCoupon()을 그대로 호출한다 — 이게 실제
- * 운영에서 벌어지는 흐름 그대로이기도 해서, Repository를 우회하는 것보다 오히려
- * 더 정확한 검증이다.
+ * CouponCampaignRepository.increaseIssuedQuantity()를 테스트에서 직접 호출하지 않는다.
+ * Repository 메서드 자체에는 트랜잭션을 걸지 않는 게 원칙이고(트랜잭션경계는 서비스 계층의 책임), Repository를 트랜잭션 없이 직접 호출하면
+ * InvalidDataAccessApiUsageException이 난다(직접 겪었다).
+ * 대신 이미 @Transactional이 걸려 있는 MysqlCouponService.issueCoupon()을 그대로 호출한다.
+ * 이게 실제 운영에서 벌어지는 흐름 그대로이기도 해서, Repository를 우회하는 것보다 오히려 더 정확한 검증이다.
  */
 @Testcontainers
 @ActiveProfiles("test")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class MysqlCouponCampaignConcurrencyIntegrationTest implements MysqlContainerSupport {
+class MysqlCouponCampaignConcurrencyIntegrationTest implements MysqlContainerSupport, RedisContainerSupport {
 
-    @DynamicPropertySource
+     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        MysqlContainerSupport.registerMysqlProperties(registry);
+        MysqlContainerSupport.registerDefaultJpaProperties(registry);
     }
 
     @Autowired

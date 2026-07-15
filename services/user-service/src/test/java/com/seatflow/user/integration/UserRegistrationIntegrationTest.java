@@ -34,10 +34,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Slf4j
 class UserRegistrationIntegrationTest implements MysqlContainerSupport {
 
-    @DynamicPropertySource
+     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        RedisContainerSupport.registerDefaultProperties(registry);
-        MysqlContainerSupport.registerMysqlProperties(registry);
+        MysqlContainerSupport.registerDefaultJpaProperties(registry);
     }
 
     @Autowired

@@ -32,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class CouponRedisFailureIntegrationTest implements MysqlContainerSupport {
 
+
     private static final GenericContainer<?> DEDICATED_REDIS =
             new GenericContainer<>(DockerImageName.parse("redis:7-alpine"))
                     .withExposedPorts(6379);
@@ -42,7 +43,7 @@ class CouponRedisFailureIntegrationTest implements MysqlContainerSupport {
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        MysqlContainerSupport.registerMysqlProperties(registry);
+        MysqlContainerSupport.registerDefaultJpaProperties(registry);
         registry.add("spring.data.redis.host", DEDICATED_REDIS::getHost);
         registry.add("spring.data.redis.port", () -> DEDICATED_REDIS.getMappedPort(6379));
     }
