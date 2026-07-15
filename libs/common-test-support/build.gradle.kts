@@ -19,4 +19,6 @@ dependencies {
     testFixturesApi("org.testcontainers:kafka")
     testFixturesApi("org.testcontainers:mongodb")
     testFixturesApi("junit:junit")
+
+    testImplementation("org.awaitility:awaitility:4.2.2")
 }

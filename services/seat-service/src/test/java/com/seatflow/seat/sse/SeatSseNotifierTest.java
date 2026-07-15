@@ -12,10 +12,9 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 /**
- * emitter.send()가 실패(연결 끊김)했을 때 해당 emitter를 store에서 정리하는지
- * 검증한다. "그냥 메시지를 흘려보내는 것"처럼 보이지만, 실제로는 전송 실패 시
- * 정리하는 분기가 있다 — 처음엔 판단 로직이 없다고 보고 테스트를 건너뛰었는데,
- * 커버리지를 확인하다가 이 분기를 놓쳤다는 걸 알게 됐다.
+ * emitter.send()가 실패(연결 끊김)했을 때 해당 emitter를 store에서 정리하는지 검증한다.
+ * 그냥 메시지를 흘려보내는 것처럼 보이지만, 실제로는 전송 실패 시 정리하는 분기가 있다.
+ * 처음엔 판단 로직이 없다고 보고 테스트를 건너뛰었는데, 커버리지를 확인하다가 이 분기를 놓쳤다는 걸 알게 됐다.
  */
 class SeatSseNotifierTest {
 

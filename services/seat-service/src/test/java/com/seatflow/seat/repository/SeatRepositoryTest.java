@@ -19,14 +19,14 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * SeatRepository의 커스텀 쿼리 메서드가 실제 DB 위에서 의도대로 필터링/조회하는지
- * 검증한다. 지금까지 서비스 계층 단위 테스트는 Repository를 Mock으로 대체해서
- * "호출됐는지"만 확인했을 뿐, "이 쿼리가 실제로 맞는 데이터를 가져오는지"는 검증한
- * 적이 없었다 — @DataJpaTest + TestContainers로 이 공백을 채운다.
+ * SeatRepository의 커스텀 쿼리 메서드가 실제 DB 위에서 의도대로 필터링/조회하는지 검증한다.
+ * 지금까지 서비스 계층 단위 테스트는 Repository를 Mock으로 대체해서 호출됐는지만 확인했을 뿐,
+ * 이 쿼리가 실제로 맞는 데이터를 가져오는지는 검증한 적이 없었다.
+ * @DataJpaTest + TestContainers로 이 공백을 채운다.
  *
- * @AutoConfigureTestDatabase(replace = NONE)로 Spring Boot가 기본 제공하는
- * 인메모리 DB(H2) 자동 치환을 꺼야, MysqlContainerSupport가 지정한 진짜 MySQL이
- * 실제로 쓰인다 — 이걸 빠뜨리면 @DataJpaTest는 기본적으로 H2로 치환해버린다.
+ * @AutoConfigureTestDatabase(replace = NONE)로 Spring Boot가 기본 제공하는 인메모리 DB(H2) 자동 치환을 꺼야,
+ * MysqlContainerSupport가 지정한 진짜 MySQL이 실제로 쓰인다.
+ * 이걸 빠뜨리면 @DataJpaTest는 기본적으로 H2로 치환해버린다.
  */
 @Testcontainers
 @ActiveProfiles("test")

@@ -10,9 +10,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Coupon 도메인의 상태 전이 규칙을 검증한다. DB/Redis 없이 순수 객체 단위로
- * "이 로직 자체가 논리적으로 맞는가"만 확인한다 — 동시성(여러 스레드가 동시에
- * 이 메서드를 호출했을 때의 안전성)은 통합 테스트의 몫이다.
+ * Coupon 도메인의 상태 전이 규칙을 검증한다.
+ * DB/Redis 없이 순수 객체 단위로 이 로직 자체가 논리적으로 맞는지만 확인한다.
+ * 동시성(여러 스레드가 동시에 이 메서드를 호출했을 때의 안전성)은 통합 테스트의 몫이다.
  */
 class CouponTest {
 

@@ -24,7 +24,7 @@ public class PaymentFacade {
     public Payment pay(String idempotencyKey, ProcessPaymentCommand command) {
         long acquired = idempotencyProvider.tryAcquire(idempotencyKey);
         if (acquired != 1) {
-            // 0=처리 중, -1=이미 완료 → 중복 요청 거절
+            // 0=처리 중, -1=이미 완료 ->중복 요청 거절
             throw new BusinessException(
                     PaymentErrorCode.DUPLICATE_REQUEST.getStatus().value(),
                     PaymentErrorCode.DUPLICATE_REQUEST.getMessage());
@@ -34,7 +34,7 @@ public class PaymentFacade {
             idempotencyProvider.markDone(idempotencyKey);
             return payment;
         } catch (RuntimeException e) {
-            // 결제 실패/거절 시 키 해제 → 동일 키로 재시도 허용
+            // 결제 실패/거절 시 키 해제 ->동일 키로 재시도 허용
             idempotencyProvider.release(idempotencyKey);
             throw e;
         }

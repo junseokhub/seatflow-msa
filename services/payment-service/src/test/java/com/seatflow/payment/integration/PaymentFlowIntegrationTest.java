@@ -66,7 +66,10 @@ class PaymentFlowIntegrationTest implements MysqlContainerSupport, RedisContaine
     @Test
     @DisplayName("정상 결제 요청은 완료되고 DB에 정확히 저장된다")
     void completePaymentFlowPersistsCorrectly() {
-        Long reservationId = 101L;   // 이 테스트 전용 reservationId — 다른 테스트와 격리
+        Long reservationId = 101L;   // 이 테스트 전용 reservationId   @DynamicPropertySource
+    static void properties(DynamicPropertyRegistry registry) {
+        MysqlContainerSupport.registerDefaultJpaProperties(registry);
+    }다른 테스트와 격리
         given(reservationClient.getReservation(reservationId))
                 .willReturn(ApiResponse.ok(pendingReservation(BigDecimal.valueOf(50000))));
 

@@ -88,9 +88,10 @@ class ReservationRepositoryTest implements MysqlContainerSupport {
     @Test
     @DisplayName("저장 시 @PrePersist가 status를 PENDING으로, createdAt/updatedAt을 채운다")
     void prePersistInitializesStatusAndTimestamps() {
-        // 빌더에서 CONFIRMED로 지정해도, 진짜 저장을 거치면 @PrePersist가
-        // 무조건 PENDING으로 덮어쓴다 — 이게 "빌더의 status 파라미터는 저장을
-        // 안 하는 순수 단위 테스트에서만 의미가 있다"는 걸 실제로 증명하는 테스트다.
+        /**
+         * 빌더에서 CONFIRMED로 지정해도, 진짜 저장을 거치면 @PrePersist가 무조건 PENDING으로 덮어쓴다.
+         * 이게 빌더의 status 파라미터는 저장을 안 하는 순수 단위 테스트에서만 의미가 있다는 걸 실제로 증명하는 테스트다.
+         */
         Reservation reservation = Reservation.builder()
                 .userId("user1").showId("show-1").seatId(1L)
                 .amount(BigDecimal.valueOf(50000)).showDate(LocalDateTime.now().plusDays(10))

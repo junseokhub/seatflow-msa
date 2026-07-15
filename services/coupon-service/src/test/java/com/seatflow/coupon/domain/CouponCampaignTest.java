@@ -74,13 +74,13 @@ class CouponCampaignTest {
             assertThat(campaign.isSoldOut()).isFalse();
         }
 
-        // 참고: issuedQuantity를 총 수량만큼 늘리는 공개 API가 도메인에 없다
-        // (원자적 UPDATE는 Repository 레벨에서 처리되고, 엔티티는 그 결과를 그대로
-        // 읽기만 한다). 그래서 "매진 상태"를 직접 검증하려면 Reflection이나
-        // Repository를 통한 통합 테스트가 필요하다 — 이건 통합 테스트 쪽에서
-        // 확인한다. MysqlCouponService를 쓰는 경로에서만 issuedQuantity가
-        // 의미를 가지므로(RedisCouponService는 재고 판단을 Redis가 하고,
-        // CouponCampaign.issuedQuantity는 안 씀), 이 필드 자체가 지금은
-        // MysqlCouponService 전용이라는 점도 참고할 것.
+        /* 참고: issuedQuantity를 총 수량만큼 늘리는 공개 API가 도메인에 없다.
+         * (원자적 UPDATE는 Repository 레벨에서 처리되고, 엔티티는 그 결과를 그대로 읽기만 한다).
+         * 그래서 "매진 상태"를 직접 검증하려면 Reflection이나 Repository를 통한 통합 테스트가 필요하다.
+         * 이건 통합 테스트 쪽에서 확인한다.
+         * MysqlCouponService를 쓰는 경로에서만 issuedQuantity가 의미를 가지므로(RedisCouponService는 재고 판단을 Redis가 하고,
+         * CouponCampaign.issuedQuantity는 안 씀,
+         * 이 필드 자체가 지금은 MysqlCouponService 전용이라는 점도 참고할 것.
+         */
     }
 }

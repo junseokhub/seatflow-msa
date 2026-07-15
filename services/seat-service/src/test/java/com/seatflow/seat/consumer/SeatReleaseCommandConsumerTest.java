@@ -72,10 +72,11 @@ class SeatReleaseCommandConsumerTest {
         doThrow(new RuntimeException("DB connection lost"))
                 .when(seatService).releaseSeatForCancellation(1L, 2L, "show-1", 3L);
 
-        // 컨슈머 코드가 이 예외를 catch해서 로그만 남기고 정상 종료하므로,
-        // consume() 자체는 예외를 던지지 않아야 한다 — Kafka 리스너 컨테이너까지
-        // 예외가 전파되면 재시도/DLQ 로직이 다시 도는데, 지금 이 실패는 그런
-        // 케이스가 아니라 "사람이 개입해야 하는 최종 실패"로 의도적으로 삼킨 것이다.
+/**
+ * 컨슈머 코드가 이 예외를 catch해서 로그만 남기고 정상 종료하므로, consume() 자체는 예외를 던지지 않아야 한다.
+ * Kafka 리스너 컨테이너까지 예외가 전파되면 재시도/DLQ 로직이 다시 도는데,
+ * 지금 이 실패는 그런 케이스가 아니라 "사람이 개입해야 하는 최종 실패"로 의도적으로 삼킨 것이다.
+ */
         org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> consumer.consume(validMessage));
     }
 }

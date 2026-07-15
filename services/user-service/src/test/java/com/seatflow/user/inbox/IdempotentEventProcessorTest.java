@@ -17,10 +17,9 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 /**
- * IdempotentEventProcessor는 "선점(insertIfAbsent) 성공 시에만 비즈니스 로직을
- * 실행한다"는 게 핵심이다 — 이게 다른 세 방식과 다른 지점(별도 처리 이력을
- * 먼저 확정한 뒤에만 실제 작업을 한다)이라, 여기서는 businessLogic(Runnable)이
- * "실행됐는지 여부" 자체를 직접 검증한다.
+ * IdempotentEventProcessor는 선점(insertIfAbsent) 성공 시에만 비즈니스 로직을 실행한다는 게 핵심이다.
+ * 이게 다른 세 방식과 다른 지점(별도 처리 이력을 먼저 확정한 뒤에만 실제 작업을 한다)이라,
+ * 여기서는 businessLogic(Runnable)이 실행됐는지 여부 자체를 직접 검증한다.
  */
 @ExtendWith(MockitoExtension.class)
 class IdempotentEventProcessorTest {

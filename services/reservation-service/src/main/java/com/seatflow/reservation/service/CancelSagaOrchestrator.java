@@ -22,14 +22,13 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 취소 Saga 오케스트레이터. reservation이 중심이 되어 좌석 반환 → 환불을 순서대로 지휘하고,
- * 환불이 실패하면 좌석 반환을 되돌리는 보상을 지휘한다.
+ * 취소 Saga 오케스트레이터. reservation이 중심이 되어 좌석 반환 -> 환불을 순서대로 지휘하고, 환불이 실패하면 좌석 반환을 되돌리는 보상을 지휘한다.
  *
- * 각 단계는 명령을 보내고 끝난다(비동기). 다음 단계는 응답 이벤트(컨슈머)가 왔을 때
- * 이 클래스의 다른 메서드가 이어받는다. CancelSaga가 "지금 어디까지 됐는지"를 들고 있다.
+ * 각 단계는 명령을 보내고 끝난다(비동기). 다음 단계는 응답 이벤트(컨슈머)가 왔을 때 이 클래스의 다른 메서드가 이어받는다.
+ * CancelSaga가 지금 어디까지 됐는지를 들고 있다.
  *
- * 1차 구현 범위: 정상 경로 + 실패 시 보상까지만 다룬다. 응답이 영영 안 오는 경우(타임아웃)에
- * 대한 재시도·강제 실패 처리는 별도 스케줄러로 추후 보강한다.
+ * 1차 구현 범위: 정상 경로 + 실패 시 보상까지만 다룬다.
+ * 응답이 영영 안 오는 경우(타임아웃)에 대한 재시도, 강제 실패 처리는 별도 스케줄러로 추후 보강한다.
  */
 @Slf4j
 @Service
@@ -45,8 +44,8 @@ public class CancelSagaOrchestrator {
     /**
      * 취소 진입점. PENDING/CONFIRMED 모두 여기서 받아 분기한다.
      *
-     * PENDING  → 결제 없음. Saga 없이 즉시 CANCELLED + 좌석 반환 명령만 발행(동기 완료).
-     * CONFIRMED → 기존 Saga 흐름. 좌석 반환 → 환불 → 완료(비동기).
+     * PENDING  -> 결제 없음. Saga 없이 즉시 CANCELLED + 좌석 반환 명령만 발행(동기 완료).
+     * CONFIRMED -> 기존 Saga 흐름. 좌석 반환 ->환불 ->완료(비동기).
      *
      * 멱등성(CONFIRMED): CancelSaga.reservationId unique 제약이 중복 요청을 막는다.
      */
@@ -107,7 +106,7 @@ public class CancelSagaOrchestrator {
     }
 
     /**
-     * 결제 전 취소. 환불 없음 → Saga 없이 즉시 CANCELLED + 좌석 반환 명령 발행.
+     * 결제 전 취소. 환불 없음 -> Saga 없이 즉시 CANCELLED + 좌석 반환 명령 발행.
      * sagaId=null이므로 seat.released가 돌아와도 오케스트레이터는 경고 로그만 남기고 스킵한다.
      */
     private void cancelPendingReservation(Reservation reservation) {
@@ -147,13 +146,13 @@ public class CancelSagaOrchestrator {
     }
 
 
-    // CancelSagaOrchestrator.onPaymentRefunded — 원본(12편)으로 복구.
-    // 쿠폰 복원은 payment-service의 executeRefund가 이미 처리했으므로,
-    // reservation은 couponClient를 가질 필요가 없다. 파라미터도 2개(sagaId, reservationId) 그대로.
-
     /**
-     * 환불 완료 응답 처리(payment.refunded 컨슈머가 호출). Saga 최종 완료.
+     * CancelSagaOrchestrator.onPaymentRefunded,  원본(12편)으로 복구.
+     * 쿠폰 복원은 payment-service의 executeRefund가 이미 처리했으므로, reservation은 couponClient를 가질 필요가 없다.
+     * 파라미터도 2개(sagaId, reservationId) 그대로 유지한다.
      */
+
+    // 환불 완료 응답 처리(payment.refunded 컨슈머가 호출). Saga 최종 완료.
     @Transactional
     public void onPaymentRefunded(Long sagaId, Long reservationId) {
         CancelSaga saga = cancelSagaRepository.findById(sagaId).orElse(null);
@@ -172,7 +171,7 @@ public class CancelSagaOrchestrator {
 
         Reservation reservation = reservationRepository.findById(reservationId).orElse(null);
         if (reservation != null) {
-            reservation.cancel();   // CANCELLING → CANCELLED
+            reservation.cancel();   // CANCELLING -> CANCELLED
         }
 
         log.info("Cancel saga completed: sagaId={}, reservationId={}", sagaId, reservationId);
@@ -207,7 +206,7 @@ public class CancelSagaOrchestrator {
 
     /**
      * 보상(좌석 재점유) 완료 응답 처리(seat.reserved.compensated 컨슈머가 호출).
-     * 취소 자체는 실패로 마무리하고, 예매를 원상복구(CANCELLING → CONFIRMED)한다.
+     * 취소 자체는 실패로 마무리하고, 예매를 원상복구(CANCELLING -> CONFIRMED)한다.
      */
     @Transactional
     public void onSeatReservedCompensated(Long sagaId, Long reservationId) {
@@ -226,7 +225,7 @@ public class CancelSagaOrchestrator {
 
         Reservation reservation = reservationRepository.findById(reservationId).orElse(null);
         if (reservation != null) {
-            reservation.revertCancelling();   // CANCELLING → CONFIRMED (원상복구)
+            reservation.revertCancelling();   // CANCELLING -> CONFIRMED (원상복구)
         }
 
         log.info("Cancel saga failed and compensated (reservation restored): sagaId={}, reservationId={}",

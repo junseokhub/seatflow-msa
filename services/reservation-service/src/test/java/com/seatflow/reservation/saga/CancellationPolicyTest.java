@@ -66,7 +66,7 @@ class CancellationPolicyTest {
         }
 
         @Test
-        @DisplayName("9일 전이면 10% 수수료(90% 환불) — 10일 경계 바로 아래")
+        @DisplayName("9일 전이면 10% 수수료(90% 환불) - 10일 경계 바로 아래")
         void nineDaysGets90PercentRefund() {
             LocalDateTime now = SHOW_DATE.minusDays(9);
 
@@ -88,7 +88,7 @@ class CancellationPolicyTest {
         }
 
         @Test
-        @DisplayName("6일 전이면 20% 수수료(80% 환불) — 7일 경계 바로 아래")
+        @DisplayName("6일 전이면 20% 수수료(80% 환불) - 7일 경계 바로 아래")
         void sixDaysGets80PercentRefund() {
             LocalDateTime now = SHOW_DATE.minusDays(6);
 
@@ -110,7 +110,7 @@ class CancellationPolicyTest {
         }
 
         @Test
-        @DisplayName("3일 전이면 30% 수수료(70% 환불) — 4일 경계 바로 아래")
+        @DisplayName("3일 전이면 30% 수수료(70% 환불) - 4일 경계 바로 아래")
         void threeDaysGets70PercentRefund() {
             LocalDateTime now = SHOW_DATE.minusDays(3);
 
@@ -121,7 +121,7 @@ class CancellationPolicyTest {
         }
 
         @Test
-        @DisplayName("정확히 1일 전이면 30% 수수료(70% 환불) — 취소 가능한 마지노선")
+        @DisplayName("정확히 1일 전이면 30% 수수료(70% 환불) - 취소 가능한 마지노선")
         void exactlyOneDayGets70PercentRefund() {
             LocalDateTime now = SHOW_DATE.minusDays(1);
 

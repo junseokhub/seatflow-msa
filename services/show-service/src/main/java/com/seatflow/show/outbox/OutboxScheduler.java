@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * 인터페이스 추상화는 두지 않는다), 애플리케이션의 @EnableScheduling(컴포넌트 스캔)으로
  * 자동 등록된다.
  *
- *   publish(): PENDING 집기(PUBLISHING 전이) → Kafka 발행 → PUBLISHED, 실패 시 백오프 재시도
+ *   publish(): PENDING 집기(PUBLISHING 전이) ->Kafka 발행 ->PUBLISHED, 실패 시 백오프 재시도
  *   recover(): PUBLISHING으로 멈춘(전송 중 죽은) 문서를 PENDING으로 복구
  * AtomicBoolean 가드로 한 인스턴스 내 폴링 겹침을 막는다.
  */
@@ -44,7 +44,7 @@ public class OutboxScheduler {
     @Scheduled(fixedDelay = 1000)
     public void publish() {
         if (!publishing.compareAndSet(false, true)) {
-            return;   // 이전 폴링이 아직 도는 중 → 겹치지 않게 스킵
+            return;   // 이전 폴링이 아직 도는 중 ->겹치지 않게 스킵
         }
         try {
             List<Outbox> batch = outboxStore.claimPending(BATCH_SIZE);

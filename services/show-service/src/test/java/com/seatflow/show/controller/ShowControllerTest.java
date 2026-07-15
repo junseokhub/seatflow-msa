@@ -32,7 +32,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * NOTE: GlobalExceptionHandler를 @ContextConfiguration에 추가해야 BusinessException이
- * 의도한 상태코드로 변환된다 — 반복 확인한 패턴.
+ * 의도한 상태코드로 변환된다
+ * 반복 확인한 패턴.
  */
 @WebMvcTest(controllers = ShowController.class)
 @ContextConfiguration(classes = {

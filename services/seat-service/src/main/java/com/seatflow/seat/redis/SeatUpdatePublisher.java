@@ -17,7 +17,7 @@ public class SeatUpdatePublisher {
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
 
-    // 커밋된 좌석 변경을 Redis 채널로 발행 → 모든 pod이 받는다
+    // 커밋된 좌석 변경을 Redis 채널로 발행 ->모든 pod이 받는다
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void publish(SeatStatusChangedEvent event) {
         try {

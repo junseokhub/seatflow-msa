@@ -30,7 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 
 /**
- * 컨트롤러 계층만 검증한다. coupon-service에서 겪었던 함정 두 가지를 반영했다:
+ * 컨트롤러 계층만 검증한다. coupon-service에서 겪었던 함정 두 가지를 반영했다.
  * (1) @WebMvcTest가 메인 클래스를 자동 채택해 entityManagerFactory 등을 못 찾는 문제
  * -> @ContextConfiguration으로 정확히 이 컨트롤러+SecurityConfig만 명시.
  * (2) SecurityConfig가 요구하는 JwtAuthenticationFilter를 MockitoBean으로 채우고,
@@ -125,10 +125,11 @@ class SeatControllerTest {
                 .andExpect(request().asyncStarted())
                 .andReturn();
 
-        // SseEmitter는 원래 "오래 열려있는 연결"이 목적이라, 아무 데이터도 안 보내고
-        // 열어만 두면 비동기 작업이 "완료됐다"는 신호 자체가 안 생겨 asyncDispatch가
-        // 무한정(타임아웃까지) 대기한다 — 직접 겪었다. 테스트에서는 emitter를 명시적으로
-        // complete()시켜서 "이 요청은 여기서 끝났다"는 신호를 만들어줘야 한다.
+/**
+ * SseEmitter는 원래 오래 열려있는 연결이 목적이라,
+ * 아무 데이터도 안 보내고 열어만 두면 비동기 작업이 완료됐다는 신호 자체가 안 생겨 asyncDispatch가 무한정(타임아웃까지) 대기한다 .
+ * 테스트에서는 emitter를 명시적으로 complete()시켜서 이 요청은 여기서 끝났다라는 신호를 만들어줘야 한다.
+ */
         emitter.complete();
 
         mockMvc.perform(asyncDispatch(mvcResult))

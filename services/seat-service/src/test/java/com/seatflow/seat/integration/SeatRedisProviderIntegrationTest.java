@@ -157,8 +157,10 @@ class SeatRedisProviderIntegrationTest implements MysqlContainerSupport, RedisCo
         seatRedisProvider.release("show-1", 21L);
 
         assertThat(seatRedisProvider.isHeld("show-1", 21L)).isFalse();
-        // hold()로 잡은 걸 release()가 정확히 지웠다는 건, 이제 getHolder()로도
-        // 확인 가능해야 한다 — 셋이 전부 같은 키를 공유한다는 걸 교차 검증한다.
+    /**
+     * hold()로 잡은 걸 release()가 정확히 지웠다는 건, 이제 getHolder()로도 확인 가능해야 한다.
+     * 셋이 전부 같은 키를 공유한다는 걸 교차 검증한다.
+     */
         assertThat(seatRedisProvider.getHolder("show-1", 21L)).isNull();
     }
 

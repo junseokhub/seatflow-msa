@@ -15,8 +15,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 /**
- * 컨슈머는 멱등 처리를 하지 않는다 — UserService.createUser()의
- * noRollbackFor 전략이 그 책임을 전담하므로, 컨슈머는 파싱과 위임만 한다.
+ * 컨슈머는 멱등 처리를 하지 않는다.
+ * UserService.createUser()의 noRollbackFor 전략이 그 책임을 전담하므로, 컨슈머는 파싱과 위임만 한다.
  */
 @ExtendWith(MockitoExtension.class)
 class UserRegisteredEventConsumerTest {

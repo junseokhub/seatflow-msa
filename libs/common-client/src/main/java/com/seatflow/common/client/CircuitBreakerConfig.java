@@ -28,8 +28,8 @@ public class CircuitBreakerConfig {
      * 모든 Feign 호출에 적용되는 기본 정책.
      * - 최근 10건 중 실패율 50% 이상이면 서킷 오픈(이후 요청 즉시 실패, 대상을 안 부름)
      * - 오픈 후 5초 지나면 반열림으로 전환, 3건만 시험적으로 흘려보내 회복 여부 확인
-     * - 개별 호출은 3초 넘으면 타임아웃으로 실패 처리 — 이게 핵심이다. 대상 서비스가
-     *   느려져도 호출한 쪽 스레드가 무한정 잡혀있지 않게 한다.
+     * - 개별 호출은 3초 넘으면 타임아웃으로 실패 처리
+     *  ->이게 핵심이다. 대상 서비스가 느려져도 호출한 쪽 스레드가 무한정 잡혀있지 않게 한다.
      */
     @Bean
     public Customizer<Resilience4JCircuitBreakerFactory> defaultCustomizer() {

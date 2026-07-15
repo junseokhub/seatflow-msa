@@ -24,10 +24,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 /**
- * UserService.createUser()는 [2] INSERT IGNORE 방식이다(최종 채택 — 자세한
- * 경위는 UserService 클래스 주석과 4-1번외편 블로그 참고). 예외 자체가 안
- * 나는 방식이라, 테스트도 "예외를 던지는지"가 아니라 insertIgnore()의
- * 반환값(1=신규, 0=중복)을 어떻게 다루는지에 초점을 맞춘다.
+ * UserService.createUser()는 [2] INSERT IGNORE 방식이다.
+ * 최종 채택
+ * 자세한 경위는 UserService 클래스 주석과 4-1번외편 블로그 참고
+ * 예외 자체가 안 나는 방식이라, 테스트도 예외를 던지는지가 아니라 insertIgnore()의 반환값(1=신규, 0=중복)을 어떻게 다루는지에 초점을 맞춘다.
  */
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {

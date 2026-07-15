@@ -28,16 +28,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * payment-service가 Feign으로 호출하는 서비스 간 API. 지금 SecurityConfig 기준으로
- * /internal/** 경로도 다른 API와 동일하게 인증을 요구한다(별도 permitAll 처리가
- * 없다) — payment가 이 호출을 할 때 FeignAuthConfig(common-clients)로 원본 요청의
- * Authorization 헤더를 전파하기 때문에 실제로는 인증된 채로 온다. 여기서는 그
- * 전제를 깔고, 인증된 상태에서 각 엔드포인트가 서비스 메서드를 올바른 파라미터로
- * 호출하고 응답을 올바르게 조립하는지만 확인한다.
- *
- * 이 API를 외부에서 직접(Kong 등을 거쳐) 호출할 수 있는지는 Kong/Ingress 라우팅
- * 설정의 몫이라 이 테스트 범위 밖이다 — 원래는 내부 전용으로 노출을 막아야 하는
- * 지점이라는 것만 참고로 남겨둔다.
+ * payment-service가 Feign으로 호출하는 서비스 간 API.
+ * 지금 SecurityConfig 기준으로 /internal/** 경로도 다른 API와 동일하게 인증을 요구한다(별도 permitAll 처리가 없다)
+ * payment가 이 호출을 할 때 FeignAuthConfig(common-clients)로 원본 요청의 Authorization 헤더를 전파하기 때문에 실제로는 인증된 채로 온다.
+ * 여기서는 그 전제를 깔고, 인증된 상태에서 각 엔드포인트가 서비스 메서드를 올바른 파라미터로 호출하고 응답을 올바르게 조립하는지만 확인한다.
+ * 이 API를 외부에서 직접(Kong 등을 거쳐) 호출할 수 있는지는 Kong/Ingress 라우팅 설정의 몫이라 이 테스트 범위 밖이다.
+ * 원래는 내부 전용으로 노출을 막아야 하는 지점이라는 것만 참고로 남겨둔다.
  */
 @WebMvcTest(controllers = CouponInternalController.class)
 @ContextConfiguration(classes = {CouponInternalController.class, SecurityConfig.class})

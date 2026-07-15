@@ -94,11 +94,12 @@ class OutboxSchedulerTest {
     @Test
     @DisplayName("이전 publish()가 아직 실행 중이면(AtomicBoolean 가드), 새 호출은 클레임 자체를 시도하지 않는다")
     void skipsWhenAlreadyPublishing() throws Exception {
-        // publish() 내부에서 claimPending이 오래 걸리는 상황을 흉내내려면 실제
-        // 동시 스레드가 필요하다 — 여기서는 AtomicBoolean 자체의 compareAndSet
-        // 동작을 신뢰하고, "정상적으로 한 번 호출되면 가드가 해제되어 다음
-        // 호출이 다시 정상 동작한다"는 것만 확인한다(가드가 영구적으로 안
-        // 풀리는 걸 방지하는 회귀 테스트).
+        /**
+         * publish() 내부에서 claimPending이 오래 걸리는 상황을 흉내내려면 실제 동시 스레드가 필요하다.
+         * 여기서는 AtomicBoolean 자체의 compareAndSet 동작을 신뢰하고,
+         * 정상적으로 한 번 호출되면 가드가 해제되어 다음 호출이 다시 정상 동작한다는 것만 확인한다.
+         * 가드가 영구적으로 안 풀리는 걸 방지하는 회귀 테스트
+         */
         given(outboxStore.claimPending(anyInt())).willReturn(List.of());
 
         scheduler.publish();

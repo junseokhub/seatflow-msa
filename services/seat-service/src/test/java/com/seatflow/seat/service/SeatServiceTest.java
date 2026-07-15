@@ -29,9 +29,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 /**
- * SeatService의 분기 로직을 Mockito로 검증한다. 실제 필드 구성(seatRedisProvider,
- * seatRepository, outboxAppender, eventPublisher)은 제공된 코드 스니펫에서 사용된
- * 이름을 그대로 따랐다 — 실제 생성자 시그니처와 다르면 필드/생성자만 맞추면 된다.
+ * SeatService의 분기 로직을 Mockito로 검증한다.
+ * 실제 필드 구성(seatRedisProvider, seatRepository, outboxAppender, eventPublisher)은 제공된 코드 스니펫에서 사용된 이름을 그대로 따랐다.
+ * 실제 생성자 시그니처와 다르면 필드/생성자만 맞추면 된다.
  */
 @ExtendWith(MockitoExtension.class)
 class SeatServiceTest {

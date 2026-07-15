@@ -66,7 +66,7 @@ class DefaultPaymentServiceTest {
     }
 
     @Nested
-    @DisplayName("executePayment() — 사전 검증")
+    @DisplayName("executePayment() - 사전 검증")
     class PreValidation {
 
         @Test

@@ -20,24 +20,19 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 선착순 쿠폰 발급의 동시성 제어는 Redis(1차 판단, 원자적)와 MySQL(확정 저장,
- * Outbox로 신뢰성 있게 이벤트 발행)로 역할이 나뉜다.
- *
- * 트랜잭션 경계 설계: issueCoupon() 자체에는 @Transactional을 걸지 않는다. Redis
- * 호출(issue, confirmIssued)은 외부 네트워크 왕복이 있는 I/O라, 이걸 JPA 트랜잭션
- * 안에 넣으면 그 왕복 시간 내내 DB 커넥션을 붙잡고 있게 된다. 선착순 이벤트처럼
- * 동시 요청이 몰리는 상황에서 DB 커넥션 풀이 이 불필요하게 긴 점유로 고갈되고,
- * 나머지 요청들이 커넥션을 기다리며 줄줄이 블로킹된다(통합 테스트로 동시 요청을
- * 재현하고서야 드러난 문제였다 — Mock 단위 테스트에서는 안 보인다).
- *
- * DB 쓰기는 CouponPersister라는 별도 빈으로 분리했다. 같은 클래스 안에서
- * this.persistCoupon()처럼 자기 자신을 호출하면 스프링 AOP 프록시가 그 호출을
- * 가로채지 못해 @Transactional이 무시되는 self-invocation 문제가 있어, 트랜잭션
- * 경계가 필요한 부분을 아예 다른 빈으로 떼어냈다.
- *
- * Redis가 죽으면(CouponRedisProvider가 예외를 던지면) 발급 API 자체를 막는다
- * (Fail-closed). Kafka가 죽어도 발급은 막히지 않는다 — MySQL 저장과 Outbox 기록이
- * 같은 트랜잭션으로 묶여 있고, Kafka 발행은 OutboxScheduler가 나중에 처리한다.
+ * 선착순 쿠폰 발급의 동시성 제어는 Redis(1차 판단, 원자적)와 MySQL(확정 저장, Outbox로 신뢰성 있게 이벤트 발행)로 역할이 나뉜다.
+ * 트랜잭션 경계 설계: issueCoupon() 자체에는 @Transactional을 걸지 않는다.
+ * Redis 호출(issue, confirmIssued)은 외부 네트워크 왕복이 있는 I/O라,
+ * 이걸 JPA 트랜잭션 안에 넣으면 그 왕복 시간 내내 DB 커넥션을 붙잡고 있게 된다.
+ * 선착순 이벤트처럼 동시 요청이 몰리는 상황에서 DB 커넥션 풀이 이 불필요하게 긴 점유로 고갈되고,
+ * 나머지 요청들이 커넥션을 기다리며 줄줄이 블로킹된다(통합 테스트로 동시 요청을 재현하고서야 드러난 문제였다. Mock 단위 테스트에서는 안 보인다).
+ * DB 쓰기는 CouponPersister라는 별도 빈으로 분리했다.
+ * 같은 클래스 안에서 this.persistCoupon()처럼 자기 자신을 호출하면,
+ * 스프링 AOP 프록시가 그 호출을 가로채지 못해 @Transactional이 무시되는 self-invocation 문제가 있어,
+ * 트랜잭션 경계가 필요한 부분을 아예 다른 빈으로 떼어냈다.
+ * Redis가 죽으면(CouponRedisProvider가 예외를 던지면) 발급 API 자체를 막는다(Fail-closed).
+ * Kafka가 죽어도 발급은 막히지 않는다.
+ * MySQL 저장과 Outbox 기록이 같은 트랜잭션으로 묶여 있고, Kafka 발행은 OutboxScheduler가 나중에 처리한다.
  */
 @Slf4j
 @Service("redisCouponService")
@@ -69,9 +64,8 @@ public class DefaultRedisCouponService implements CouponService {
     }
 
     /**
-     * 트랜잭션 없이 진입한다. DB 커넥션은 couponPersister.persist() 호출 구간에서만
-     * (프록시를 거쳐) 짧게 열린다 — Redis 호출 두 번(issue, confirmIssued)은 그
-     * 바깥에서 이루어진다.
+     * 트랜잭션 없이 진입한다. DB 커넥션은 couponPersister.persist() 호출 구간에서만 (프록시를 거쳐) 짧게 열린다.
+     * Redis 호출 두 번(issue, confirmIssued)은 그 바깥에서 이루어진다.
      */
     @Override
     public Coupon issueCoupon(Long campaignId, String userId) {

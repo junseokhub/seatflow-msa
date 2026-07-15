@@ -50,9 +50,10 @@ class UserServiceSaveAndCatchTest {
         given(userRepository.save(any(User.class)))
                 .willThrow(new DataIntegrityViolationException("duplicate", sqlEx));
 
-        // 이 방식은 위반 원인을 세분화하지 않고 DataIntegrityViolationException이면
-        // 무조건 삼킨다 — [4](noRollbackFor)와 달리 1062인지 별도로 확인하지 않는
-        // 것도 이 방식의 특징(더 단순하지만 더 거칠다)이다.
+    /**
+     * 이 방식은 위반 원인을 세분화하지 않고 DataIntegrityViolationException이면 무조건 삼킨다.
+     * [4](noRollbackFor)와 달리 1062인지 별도로 확인하지 않는 것도 이 방식의 특징(더 단순하지만 더 거칠다)이다.
+     */
         assertThatCode(() -> service.createUser("user-1", "test@example.com", "테스트"))
                 .doesNotThrowAnyException();
     }

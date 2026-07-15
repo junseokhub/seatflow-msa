@@ -42,8 +42,8 @@ public class SeatReserveCompensationCommandConsumer {
             seatService.reserveSeatForCompensation(
                     command.sagaId(), command.reservationId(), command.showId(), command.seatId());
         } catch (Exception e) {
-            // TODO: 보상의 보상은 없다. 실패 시 CancelSaga가 COMPENSATING에 멈춘 채로
-            // 남는다 — 이건 사람이 개입해야 하는 최종 실패 케이스로 취급한다.
+            // TODO: 보상의 보상은 없다. 실패 시 CancelSaga가 COMPENSATING에 멈춘 채로 남는다
+            // 이건 사람이 개입해야 하는 최종 실패 케이스로 취급한다.
             // 운영 알림(Discord webhook 등) 연동은 향후 보강 지점이다.
             log.error("Seat compensation reserve failed unexpectedly: sagaId={}, seatId={}",
                     command.sagaId(), command.seatId(), e);

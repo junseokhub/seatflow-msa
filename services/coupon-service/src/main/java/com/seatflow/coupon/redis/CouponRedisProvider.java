@@ -65,7 +65,10 @@ public class CouponRedisProvider {
     /**
      * MySQL 저장 성공 후 호출. 임시 마킹(PENDING, TTL 있음)을 영구 확정(CONFIRMED,
      * TTL 없음)으로 바꾼다. 이 호출 자체가 안 오면(MySQL 저장 실패, 서버 다운 등)
-     * TTL이 그대로 흘러가 자동으로 마킹이 사라진다 — confirmIssued를 호출하지
+     * TTL이 그대로 흘러가 자동으로 마킹이 사라진다   @DynamicPropertySource
+    static void properties(DynamicPropertyRegistry registry) {
+        MysqlContainerSupport.registerDefaultJpaProperties(registry);
+    }confirmIssued를 호출하지
      * "않는 것"이 곧 복구 트리거다.
      * KEYS[1] = coupon:campaign:{campaignId}:issued:{userId}
      * 반환값: 1 = 확정 성공, 0 = 이미 만료됐거나 없음(비정상 상황, 로그로 남길 것)
@@ -99,7 +102,10 @@ public class CouponRedisProvider {
         return result == null ? 0L : result;
     }
 
-    /** MySQL 저장 성공 후 반드시 호출 — 임시 마킹을 영구로 확정한다. */
+    /** MySQL 저장 성공 후 반드시 호출   @DynamicPropertySource
+    static void properties(DynamicPropertyRegistry registry) {
+        MysqlContainerSupport.registerDefaultJpaProperties(registry);
+    }임시 마킹을 영구로 확정한다. */
     public void confirmIssued(Long campaignId, String userId) {
         Long result = redisTemplate.execute(
                 confirmCouponScript,
@@ -107,7 +113,10 @@ public class CouponRedisProvider {
         if (result == null || result == 0L) {
             // TTL이 이미 지나 마킹이 사라진 뒤 confirm이 뒤늦게 온 비정상 케이스.
             // MySQL엔 저장됐는데 Redis 마킹이 없어진 상태라, 이 사용자가 재시도하면
-            // Redis는 "발급 가능"으로 보고 다시 발급을 내줄 수 있다 — 이 경우 MySQL의
+            // Redis는 "발급 가능"으로 보고 다시 발급을 내줄 수 있다   @DynamicPropertySource
+    static void properties(DynamicPropertyRegistry registry) {
+        MysqlContainerSupport.registerDefaultJpaProperties(registry);
+    }이 경우 MySQL의
             // unique 제약(campaignId, userId)이 최후 방어선이 되어 중복 저장을 막는다.
         }
     }

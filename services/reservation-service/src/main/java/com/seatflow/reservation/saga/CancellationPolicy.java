@@ -12,11 +12,11 @@ import java.time.LocalDateTime;
  * 단발성 공연(1회)을 가정한다. 회차별 공연은 회차 일시 기준으로 계산하도록 향후 확장한다.
  *
  * 정책(일반적인 티켓팅 기준):
- *   관람 10일 전까지  → 전액 환불 (수수료 0%)
- *   관람 7~9일 전     → 10% 수수료
- *   관람 4~6일 전     → 20% 수수료
- *   관람 1~3일 전     → 30% 수수료
- *   관람 당일 이후    → 취소 불가
+ *   관람 10일 전까지  ->전액 환불 (수수료 0%)
+ *   관람 7~9일 전     ->10% 수수료
+ *   관람 4~6일 전     ->20% 수수료
+ *   관람 1~3일 전     ->30% 수수료
+ *   관람 당일 이후    ->취소 불가
  */
 public final class CancellationPolicy {
 
@@ -54,7 +54,7 @@ public final class CancellationPolicy {
 
     /**
      * 공연일까지 남은 일수. 날짜 경계가 아니라 24시간 단위로 센다.
-     * (예: 지금이 8/30 20:00이고 공연이 9/1 19:00이면 약 1.96일 → 1일)
+     * (예: 지금이 8/30 20:00이고 공연이 9/1 19:00이면 약 1.96일 ->1일)
      */
     private static long daysUntilShow(LocalDateTime showDate, LocalDateTime now) {
         return Duration.between(now, showDate).toDays();

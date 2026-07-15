@@ -40,7 +40,7 @@ public class ReservationService {
 
     /**
      * 결제 완료로 예매를 확정한다(payment.completed 컨슈머가 호출).
-     * 확정에 성공하면(PENDING → CONFIRMED) reservation.confirmed를 Outbox에 적재해
+     * 확정에 성공하면(PENDING ->CONFIRMED) reservation.confirmed를 Outbox에 적재해
      * seat이 좌석을 RESERVED로 확정하게 한다. 이미 CONFIRMED였다면(멱등 무시) 재발행하지 않는다.
      */
     @Transactional
@@ -53,7 +53,7 @@ public class ReservationService {
         }
 
         boolean wasPending = reservation.getStatus() == ReservationStatus.PENDING;
-        reservation.confirm();   // PENDING → CONFIRMED (이미 CONFIRMED면 멱등 무시)
+        reservation.confirm();   // PENDING ->CONFIRMED (이미 CONFIRMED면 멱등 무시)
 
         // 실제로 이번에 확정된 경우에만 발행(중복 payment.completed로 인한 중복 발행 방지)
         if (wasPending) {

@@ -96,7 +96,7 @@ public class SeatService {
             // (kafkaTemplate은 SSE 등 다른 용도로 남을 수 있으니 유지 여부는 사용처 확인)
 
             // 3. 좌석별 점유 이벤트 발행 (가격·공연일을 함께 실어 reservation이 서버측 값 확보)
-            //    Outbox에 적재 → 스케줄러가 발행 보장 (좌석 검증과 같은 트랜잭션)
+            //    Outbox에 적재 ->스케줄러가 발행 보장 (좌석 검증과 같은 트랜잭션)
             Map<Long, Seat> seatById = seats.stream()
                     .collect(Collectors.toMap(Seat::getId, Function.identity()));
             for (Long seatId : seatIds) {
@@ -123,7 +123,7 @@ public class SeatService {
 
     /**
      * 예매 확정(reservation.confirmed)으로 좌석을 확정 점유한다.
-     * DB 상태를 RESERVED로 바꾸고(임시 점유 → 영구 확정), 남은 Redis hold 키를 정리한다.
+     * DB 상태를 RESERVED로 바꾸고(임시 점유 ->영구 확정), 남은 Redis hold 키를 정리한다.
      *
      * 멱등성: 같은 reservation.confirmed가 중복 도착해도 Seat.reserve()가 이미 RESERVED면
      * 무시한다(상태 전이 멱등). 좌석이 없으면 로깅 후 무시한다.
@@ -136,7 +136,7 @@ public class SeatService {
             return;
         }
 
-        seat.reserve();   // AVAILABLE/HELD → RESERVED (이미 RESERVED면 멱등 무시)
+        seat.reserve();   // AVAILABLE/HELD ->RESERVED (이미 RESERVED면 멱등 무시)
 
         // 확정됐으니 임시 점유(Redis hold)는 더 필요 없다. 정리한다.
         seatRedisProvider.release(showId, seatId);
@@ -156,7 +156,7 @@ public class SeatService {
             return;
         }
 
-        seat.release();   // RESERVED → AVAILABLE (이미 AVAILABLE이면 멱등 무시)
+        seat.release();   // RESERVED ->AVAILABLE (이미 AVAILABLE이면 멱등 무시)
 
         outboxAppender.append(EventTopic.SEAT_RELEASED, SOURCE, String.valueOf(seatId),
                 new SeatReleasedEvent(sagaId, reservationId, seatId));
@@ -176,7 +176,7 @@ public class SeatService {
             return;
         }
 
-        seat.reserve();   // AVAILABLE → RESERVED (이미 RESERVED면 멱등 무시)
+        seat.reserve();   // AVAILABLE ->RESERVED (이미 RESERVED면 멱등 무시)
 
         outboxAppender.append(EventTopic.SEAT_RESERVED_COMPENSATED, SOURCE, String.valueOf(seatId),
                 new SeatReservedCompensatedEvent(sagaId, reservationId, seatId));

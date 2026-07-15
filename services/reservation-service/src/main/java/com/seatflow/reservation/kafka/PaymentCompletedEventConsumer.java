@@ -12,7 +12,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 /**
- * payment.completed를 받아 예매를 확정(PENDING → CONFIRMED)한다.
+ * payment.completed를 받아 예매를 확정(PENDING ->CONFIRMED)한다.
  * 결제 성공 사실이 예매 확정으로 이어지는, 예매 흐름의 마지막 연결 고리다.
  *
  * 멱등성: 같은 payment.completed가 중복 도착해도 Reservation.confirm()이

@@ -14,11 +14,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 /**
- * 다른 세 컨슈머와 달리 이 컨슈머는 catch 없이 seatService.reserveSeat을 그대로
- * 호출한다(제공된 코드에서 try-catch가 없었다) — 실패 시 예외가 그대로 Kafka
- * 리스너 컨테이너까지 전파되어 재시도/DLQ 대상이 된다는 뜻이다. 다른 컨슈머들이
- * "실패를 삼키는" 것과 의도적으로 다른 정책이라면, 그 차이 자체도 테스트로
- * 명시해둘 가치가 있다.
+ * 다른 세 컨슈머와 달리 이 컨슈머는 catch 없이 seatService.reserveSeat을 그대로 호출한다(제공된 코드에서 try-catch가 없었다)
+ * 실패 시 예외가 그대로 Kafka 리스너 컨테이너까지 전파되어 재시도/DLQ 대상이 된다는 뜻이다.
+ * 다른 컨슈머들이 실패를 삼키는 것과 의도적으로 다른 정책이라면, 그 차이 자체도 테스트로 명시해둘 가치가 있다.
  */
 @ExtendWith(MockitoExtension.class)
 class ReservationConfirmedEventConsumerTest {

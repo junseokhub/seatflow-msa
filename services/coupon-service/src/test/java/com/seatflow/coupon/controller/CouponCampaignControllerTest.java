@@ -33,15 +33,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 컨트롤러 계층만 검증한다 — 실제 서비스 로직(CouponService)은 Mock으로 대체하고,
- * "요청이 올바른 서비스 메서드로 전달되는지", "인가 규칙(@PreAuthorize)이 실제로
- * 걸리는지", "응답이 올바른 상태코드/형식으로 나가는지"만 확인한다.
- *
- * 주의: @WebMvcTest는 기본적으로 컨트롤러 관련 빈만 로드한다. coupon-service의
- * SecurityConfig(@Configuration)가 이 테스트 슬라이스에 자동으로 포함되지 않으면
- * @PreAuthorize 검증(403/401 관련 테스트)이 기대와 다르게 동작할 수 있다 — 이 경우
- * @Import(SecurityConfig.class)를 클래스 레벨에 명시적으로 추가해야 한다. 실행해보고
- * 403/401 테스트가 실패하면 이 부분부터 확인할 것.
+ * 컨트롤러 계층만 검증한다.
+ * 실제 서비스 로직(CouponService)은 Mock으로 대체하고,
+ * 요청이 올바른 서비스 메서드로 전달되는지, 인가 규칙(@PreAuthorize)이 실제로 걸리는지, 응답이 올바른 상태코드/형식으로 나가는지만 확인한다.
+ * 주의: @WebMvcTest는 기본적으로 컨트롤러 관련 빈만 로드한다.
+ * coupon-service의 SecurityConfig(@Configuration)가 이 테스트 슬라이스에 자동으로 포함되지 않으면
+ * @PreAuthorize 검증(403/401 관련 테스트)이 기대와 다르게 동작할 수 있다.
+ * 이 경우 @Import(SecurityConfig.class)를 클래스 레벨에 명시적으로 추가해야 한다.
+ * 실행해보고 403/401 테스트가 실패하면 이 부분부터 확인할 것.
  */
 @WebMvcTest(CouponCampaignController.class)
 @ContextConfiguration(classes = {CouponCampaignController.class, SecurityConfig.class})

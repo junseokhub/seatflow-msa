@@ -1,4 +1,4 @@
--- 취소 Saga 상태. 예매 취소 흐름(좌석 반환 → 환불 → 완료, 실패 시 보상)을 추적한다.
+-- 취소 Saga 상태. 예매 취소 흐름(좌석 반환 ->환불 ->완료, 실패 시 보상)을 추적한다.
 -- reservation_id unique로 같은 예매의 취소 Saga 중복 생성을 막는다.
 CREATE TABLE cancel_saga (
      id             BIGINT         NOT NULL AUTO_INCREMENT,
