@@ -67,10 +67,7 @@ public class JwtProvider {
             return KeyFactory.getInstance("RSA")
                     .generatePrivate(new PKCS8EncodedKeySpec(decoded));
         } catch (Exception e) {
-            throw new BusinessException(
-                    AuthErrorCode.INVALID_TOKEN.getStatus().value(),
-                    AuthErrorCode.INVALID_TOKEN.getMessage()
-            );
+            throw new BusinessException(AuthErrorCode.INVALID_TOKEN);
         }
     }
 

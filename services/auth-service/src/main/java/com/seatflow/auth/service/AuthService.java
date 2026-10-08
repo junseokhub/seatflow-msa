@@ -32,10 +32,7 @@ public class AuthService {
     @Transactional
     public void signup(String email, String password, String name) {
         if (credentialsRepository.existsByEmail(email)) {
-            throw new BusinessException(
-                    AuthErrorCode.DUPLICATE_EMAIL.getStatus().value(),
-                    AuthErrorCode.DUPLICATE_EMAIL.getMessage()
-            );
+            throw new BusinessException(AuthErrorCode.DUPLICATE_EMAIL);
         }
 
         String userId = UUID.randomUUID().toString();
@@ -61,30 +58,18 @@ public class AuthService {
     @Transactional(readOnly = true)
     public TokenResult login(String email, String password) {
         if (redisProvider.isAccountLocked(email)) {
-            throw new BusinessException(
-                    AuthErrorCode.ACCOUNT_LOCKED.getStatus().value(),
-                    AuthErrorCode.ACCOUNT_LOCKED.getMessage()
-            );
+            throw new BusinessException(AuthErrorCode.ACCOUNT_LOCKED);
         }
 
         Credentials credentials = credentialsRepository.findByEmail(email)
-                .orElseThrow(() -> new BusinessException(
-                        AuthErrorCode.INVALID_CREDENTIALS.getStatus().value(),
-                        AuthErrorCode.INVALID_CREDENTIALS.getMessage()
-                ));
+                .orElseThrow(() -> new BusinessException(AuthErrorCode.INVALID_CREDENTIALS));
 
         if (!passwordEncoder.matches(password, credentials.getPasswordHash())) {
             long failCount = redisProvider.incrementLoginFail(email);
             if (failCount >= 5) {
-                throw new BusinessException(
-                        AuthErrorCode.ACCOUNT_LOCKED.getStatus().value(),
-                        AuthErrorCode.ACCOUNT_LOCKED.getMessage()
-                );
+                throw new BusinessException(AuthErrorCode.ACCOUNT_LOCKED);
             }
-            throw new BusinessException(
-                    AuthErrorCode.INVALID_CREDENTIALS.getStatus().value(),
-                    AuthErrorCode.INVALID_CREDENTIALS.getMessage()
-            );
+            throw new BusinessException(AuthErrorCode.INVALID_CREDENTIALS);
         }
 
         redisProvider.resetLoginFail(email);
@@ -105,16 +90,11 @@ public class AuthService {
         String stored = redisProvider.getRefreshToken(userId);
         if (stored == null || !stored.equals(refreshToken)) {
             redisProvider.deleteRefreshToken(userId);
-            throw new BusinessException(
-                    AuthErrorCode.INVALID_TOKEN.getStatus().value(),
-                    AuthErrorCode.INVALID_TOKEN.getMessage()
-            );
+            throw new BusinessException(AuthErrorCode.INVALID_TOKEN);
         }
 
         Credentials credentials = credentialsRepository.findByUserId(userId)
-                .orElseThrow(() -> new BusinessException(
-                        AuthErrorCode.INVALID_TOKEN.getStatus().value(),
-                        AuthErrorCode.INVALID_TOKEN.getMessage()));
+                .orElseThrow(() -> new BusinessException(AuthErrorCode.INVALID_TOKEN));
 
         String newAccessToken = jwtProvider.generateAccessToken(
                 userId, credentials.getEmail(), credentials.getRole());
@@ -137,10 +117,7 @@ public class AuthService {
 
     public ValidateResult validate(String accessToken) {
         if (redisProvider.isBlacklisted(accessToken)) {
-            throw new BusinessException(
-                    AuthErrorCode.INVALID_TOKEN.getStatus().value(),
-                    AuthErrorCode.INVALID_TOKEN.getMessage()
-            );
+            throw new BusinessException(AuthErrorCode.INVALID_TOKEN);
         }
 
         var claims = jwtProvider.getClaims(accessToken);

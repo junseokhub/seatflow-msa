@@ -29,9 +29,7 @@ public class UserController {
             @PathVariable String id,
             Authentication authentication) {
         if (!id.equals(authentication.getName())) {
-            throw new BusinessException(
-                    UserErrorCode.USER_NOT_OWNED.getStatus().value(),
-                    UserErrorCode.USER_NOT_OWNED.getMessage());
+            throw new BusinessException(UserErrorCode.USER_NOT_OWNED);
         }
         return ResponseEntity.ok(ApiResponse.ok(UserResponse.from(userService.getUser(id))));
     }
