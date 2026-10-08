@@ -1,12 +1,13 @@
 package com.seatflow.coupon.exception;
 
+import com.seatflow.common.exception.ErrorCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 
 @Getter
 @RequiredArgsConstructor
-public enum CouponErrorCode {
+public enum CouponErrorCode implements ErrorCode {
     CAMPAIGN_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 캠페인입니다."),
     CAMPAIGN_EXPIRED(HttpStatus.BAD_REQUEST, "종료된 캠페인입니다."),
     CAMPAIGN_SOLD_OUT(HttpStatus.CONFLICT, "쿠폰이 모두 소진되었습니다."),
