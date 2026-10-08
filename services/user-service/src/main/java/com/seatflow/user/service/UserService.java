@@ -58,9 +58,6 @@ public class UserService {
     @Transactional(readOnly = true)
     public User getUser(String id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(
-                        UserErrorCode.USER_NOT_FOUND.getStatus().value(),
-                        UserErrorCode.USER_NOT_FOUND.getMessage()
-                ));
+                .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
     }
 }
