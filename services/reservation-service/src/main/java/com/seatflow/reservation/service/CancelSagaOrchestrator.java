@@ -52,14 +52,10 @@ public class CancelSagaOrchestrator {
     @Transactional
     public void startCancellation(Long reservationId, String userId) {
         Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new BusinessException(
-                        ReservationErrorCode.RESERVATION_NOT_FOUND.getStatus().value(),
-                        ReservationErrorCode.RESERVATION_NOT_FOUND.getMessage()));
+                .orElseThrow(() -> new BusinessException(ReservationErrorCode.RESERVATION_NOT_FOUND));
 
         if (!reservation.getUserId().equals(userId)) {
-            throw new BusinessException(
-                    ReservationErrorCode.RESERVATION_NOT_OWNED.getStatus().value(),
-                    ReservationErrorCode.RESERVATION_NOT_OWNED.getMessage());
+            throw new BusinessException(ReservationErrorCode.RESERVATION_NOT_OWNED);
         }
 
         if (reservation.getStatus() == ReservationStatus.PENDING) {
@@ -68,22 +64,16 @@ public class CancelSagaOrchestrator {
         }
 
         if (reservation.getStatus() != ReservationStatus.CONFIRMED) {
-            throw new BusinessException(
-                    ReservationErrorCode.CANCELLATION_ALREADY_IN_PROGRESS.getStatus().value(),
-                    ReservationErrorCode.CANCELLATION_ALREADY_IN_PROGRESS.getMessage());
+            throw new BusinessException(ReservationErrorCode.CANCELLATION_ALREADY_IN_PROGRESS);
         }
 
         if (cancelSagaRepository.findByReservationId(reservationId).isPresent()) {
-            throw new BusinessException(
-                    ReservationErrorCode.CANCELLATION_ALREADY_IN_PROGRESS.getStatus().value(),
-                    ReservationErrorCode.CANCELLATION_ALREADY_IN_PROGRESS.getMessage());
+            throw new BusinessException(ReservationErrorCode.CANCELLATION_ALREADY_IN_PROGRESS);
         }
 
         LocalDateTime now = LocalDateTime.now();
         if (!CancellationPolicy.isCancellable(reservation.getShowDate(), now)) {
-            throw new BusinessException(
-                    ReservationErrorCode.CANCELLATION_DEADLINE_PASSED.getStatus().value(),
-                    ReservationErrorCode.CANCELLATION_DEADLINE_PASSED.getMessage());
+            throw new BusinessException(ReservationErrorCode.CANCELLATION_DEADLINE_PASSED);
         }
         BigDecimal refundAmount = CancellationPolicy.calculateRefund(
                 reservation.getAmount(), reservation.getShowDate(), now);

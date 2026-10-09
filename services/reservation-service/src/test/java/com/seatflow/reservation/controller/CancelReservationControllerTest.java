@@ -72,9 +72,7 @@ class CancelReservationControllerTest {
     @DisplayName("오케스트레이터가 RESERVATION_NOT_OWNED를 던지면 그대로 403으로 전달된다")
     void propagatesNotOwnedErrorFromOrchestrator() throws Exception {
         doAnswer(invocation -> {
-            throw new BusinessException(
-                    ReservationErrorCode.RESERVATION_NOT_OWNED.getStatus().value(),
-                    ReservationErrorCode.RESERVATION_NOT_OWNED.getMessage());
+            throw new BusinessException(ReservationErrorCode.RESERVATION_NOT_OWNED);
         }).when(cancelSagaOrchestrator).startCancellation(1L, "other-user");
 
         mockMvc.perform(post("/api/reservations/1/cancel"))

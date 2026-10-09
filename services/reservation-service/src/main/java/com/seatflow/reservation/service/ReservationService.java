@@ -70,10 +70,7 @@ public class ReservationService {
     @Transactional(readOnly = true)
     public Reservation getReservation(Long id) {
         return reservationRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(
-                        ReservationErrorCode.RESERVATION_NOT_FOUND.getStatus().value(),
-                        ReservationErrorCode.RESERVATION_NOT_FOUND.getMessage()
-                ));
+                .orElseThrow(() -> new BusinessException(ReservationErrorCode.RESERVATION_NOT_FOUND));
     }
 
     @Transactional(readOnly = true)
@@ -86,10 +83,7 @@ public class ReservationService {
         Reservation reservation = getReservation(id);
 
         if (reservation.getStatus() == ReservationStatus.CANCELLED) {
-            throw new BusinessException(
-                    ReservationErrorCode.RESERVATION_ALREADY_CANCELLED.getStatus().value(),
-                    ReservationErrorCode.RESERVATION_ALREADY_CANCELLED.getMessage()
-            );
+            throw new BusinessException(ReservationErrorCode.RESERVATION_ALREADY_CANCELLED);
         }
 
         reservation.cancel();
