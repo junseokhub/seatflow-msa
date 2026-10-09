@@ -49,22 +49,16 @@ public class DefaultPaymentService implements PaymentService {
     public Payment executePayment(ProcessPaymentCommand command) {
         ReservationView reservation = fetchReservation(command.reservationId());
         if (!STATUS_PENDING.equals(reservation.status())) {
-            throw new BusinessException(
-                    PaymentErrorCode.RESERVATION_NOT_PAYABLE.getStatus().value(),
-                    PaymentErrorCode.RESERVATION_NOT_PAYABLE.getMessage());
+            throw new BusinessException(PaymentErrorCode.RESERVATION_NOT_PAYABLE);
         }
         if (reservation.amount().compareTo(command.amount()) != 0) {
-            throw new BusinessException(
-                    PaymentErrorCode.AMOUNT_MISMATCH.getStatus().value(),
-                    PaymentErrorCode.AMOUNT_MISMATCH.getMessage());
+            throw new BusinessException(PaymentErrorCode.AMOUNT_MISMATCH);
         }
 
         paymentRepository
                 .findByReservationIdAndStatus(command.reservationId(), PaymentStatus.COMPLETED)
                 .ifPresent(p -> {
-                    throw new BusinessException(
-                            PaymentErrorCode.PAYMENT_ALREADY_COMPLETED.getStatus().value(),
-                            PaymentErrorCode.PAYMENT_ALREADY_COMPLETED.getMessage());
+                    throw new BusinessException(PaymentErrorCode.PAYMENT_ALREADY_COMPLETED);
                 });
 
         // 쿠폰 검증 -> 할인 계산. PG(mock)를 부르기 전에 최종 금액을 확정한다.
@@ -96,9 +90,7 @@ public class DefaultPaymentService implements PaymentService {
             try {
                 paymentRepository.flush();
             } catch (DataIntegrityViolationException e) {
-                throw new BusinessException(
-                        PaymentErrorCode.PAYMENT_ALREADY_COMPLETED.getStatus().value(),
-                        PaymentErrorCode.PAYMENT_ALREADY_COMPLETED.getMessage());
+                throw new BusinessException(PaymentErrorCode.PAYMENT_ALREADY_COMPLETED);
             }
 
             if (command.couponId() != null) {
@@ -126,18 +118,14 @@ public class DefaultPaymentService implements PaymentService {
             var response = couponClient.validateCoupon(couponId, userId);
             var view = response.getData();
             if (view == null || !view.valid()) {
-                throw new BusinessException(
-                        PaymentErrorCode.COUPON_INVALID.getStatus().value(),
-                        PaymentErrorCode.COUPON_INVALID.getMessage());
+                throw new BusinessException(PaymentErrorCode.COUPON_INVALID);
             }
             return view;
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
             log.error("Coupon validation failed: couponId={}", couponId, e);
-            throw new BusinessException(
-                    PaymentErrorCode.COUPON_INVALID.getStatus().value(),
-                    PaymentErrorCode.COUPON_INVALID.getMessage());
+            throw new BusinessException(PaymentErrorCode.COUPON_INVALID);
         }
     }
 
@@ -160,18 +148,14 @@ public class DefaultPaymentService implements PaymentService {
         try {
             ReservationView view = reservationClient.getReservation(reservationId).getData();
             if (view == null) {
-                throw new BusinessException(
-                        PaymentErrorCode.RESERVATION_NOT_FOUND.getStatus().value(),
-                        PaymentErrorCode.RESERVATION_NOT_FOUND.getMessage());
+                throw new BusinessException(PaymentErrorCode.RESERVATION_NOT_FOUND);
             }
             return view;
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
             log.error("Reservation lookup failed: reservationId={}", reservationId, e);
-            throw new BusinessException(
-                    PaymentErrorCode.RESERVATION_NOT_FOUND.getStatus().value(),
-                    PaymentErrorCode.RESERVATION_NOT_FOUND.getMessage());
+            throw new BusinessException(PaymentErrorCode.RESERVATION_NOT_FOUND);
         }
     }
 
@@ -179,10 +163,7 @@ public class DefaultPaymentService implements PaymentService {
     @Transactional(readOnly = true)
     public Payment getPayment(Long id) {
         return paymentRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(
-                        PaymentErrorCode.PAYMENT_NOT_FOUND.getStatus().value(),
-                        PaymentErrorCode.PAYMENT_NOT_FOUND.getMessage()
-                ));
+                .orElseThrow(() -> new BusinessException(PaymentErrorCode.PAYMENT_NOT_FOUND));
     }
 
     /**

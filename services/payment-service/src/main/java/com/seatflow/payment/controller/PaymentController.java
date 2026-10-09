@@ -61,9 +61,7 @@ public class PaymentController {
             Authentication authentication) {
         Payment payment = paymentService.getPayment(id);
         if (!payment.getUserId().equals(authentication.getName())) {
-            throw new BusinessException(
-                    PaymentErrorCode.PAYMENT_NOT_OWNED.getStatus().value(),
-                    PaymentErrorCode.PAYMENT_NOT_OWNED.getMessage());
+            throw new BusinessException(PaymentErrorCode.PAYMENT_NOT_OWNED);
         }
         return ResponseEntity.ok(ApiResponse.ok(PaymentResponse.from(payment)));
     }
