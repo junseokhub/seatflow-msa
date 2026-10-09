@@ -41,9 +41,7 @@ public class ReservationController {
             @PathVariable String userId,
             Authentication authentication) {
         if (!userId.equals(authentication.getName())) {
-            throw new BusinessException(
-                    ReservationErrorCode.RESERVATION_NOT_OWNED.getStatus().value(),
-                    ReservationErrorCode.RESERVATION_NOT_OWNED.getMessage());
+            throw new BusinessException(ReservationErrorCode.RESERVATION_NOT_OWNED);
         }
         return ResponseEntity.ok(ApiResponse.ok(
                 reservationService.getUserReservations(userId).stream()
