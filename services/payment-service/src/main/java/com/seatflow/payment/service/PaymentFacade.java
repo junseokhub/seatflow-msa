@@ -25,9 +25,7 @@ public class PaymentFacade {
         long acquired = idempotencyProvider.tryAcquire(idempotencyKey);
         if (acquired != 1) {
             // 0=처리 중, -1=이미 완료 ->중복 요청 거절
-            throw new BusinessException(
-                    PaymentErrorCode.DUPLICATE_REQUEST.getStatus().value(),
-                    PaymentErrorCode.DUPLICATE_REQUEST.getMessage());
+            throw new BusinessException(PaymentErrorCode.DUPLICATE_REQUEST);
         }
         try {
             Payment payment = paymentService.executePayment(command);
