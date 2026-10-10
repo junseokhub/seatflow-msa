@@ -60,21 +60,15 @@ public class DefaultMysqlCouponService implements CouponService {
     @Transactional
     public Coupon issueCoupon(Long campaignId, String userId) {
         CouponCampaign campaign = campaignRepository.findById(campaignId)
-                .orElseThrow(() -> new BusinessException(
-                        CouponErrorCode.CAMPAIGN_NOT_FOUND.getStatus().value(),
-                        CouponErrorCode.CAMPAIGN_NOT_FOUND.getMessage()));
+                .orElseThrow(() -> new BusinessException(CouponErrorCode.CAMPAIGN_NOT_FOUND));
 
         if (campaign.isExpired(LocalDateTime.now())) {
-            throw new BusinessException(
-                    CouponErrorCode.CAMPAIGN_EXPIRED.getStatus().value(),
-                    CouponErrorCode.CAMPAIGN_EXPIRED.getMessage());
+            throw new BusinessException(CouponErrorCode.CAMPAIGN_EXPIRED);
         }
 
         int updated = campaignRepository.increaseIssuedQuantity(campaignId);
         if (updated == 0) {
-            throw new BusinessException(
-                    CouponErrorCode.CAMPAIGN_SOLD_OUT.getStatus().value(),
-                    CouponErrorCode.CAMPAIGN_SOLD_OUT.getMessage());
+            throw new BusinessException(CouponErrorCode.CAMPAIGN_SOLD_OUT);
         }
 
         try {
@@ -92,9 +86,7 @@ public class DefaultMysqlCouponService implements CouponService {
             // 이미 다른 요청이 이 재고로 정상 발급받았을 뿐,
             // "실패한 이 요청" 때문에 차감된 게 아니다(increaseIssuedQuantity는 그 자체로
             // 이 요청의 몫을 성공적으로 차지한 것이고, 이후 insert 실패는 별개의 제약이다).
-            throw new BusinessException(
-                    CouponErrorCode.ALREADY_ISSUED.getStatus().value(),
-                    CouponErrorCode.ALREADY_ISSUED.getMessage());
+            throw new BusinessException(CouponErrorCode.ALREADY_ISSUED);
         }
     }
 
@@ -108,9 +100,7 @@ public class DefaultMysqlCouponService implements CouponService {
     @Transactional(readOnly = true)
     public CouponCampaign getCampaign(Long id) {
         return campaignRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(
-                        CouponErrorCode.CAMPAIGN_NOT_FOUND.getStatus().value(),
-                        CouponErrorCode.CAMPAIGN_NOT_FOUND.getMessage()));
+                .orElseThrow(() -> new BusinessException(CouponErrorCode.CAMPAIGN_NOT_FOUND));
     }
 
     @Override
@@ -123,13 +113,9 @@ public class DefaultMysqlCouponService implements CouponService {
     @Transactional(readOnly = true)
     public Coupon getCoupon(Long id, String userId) {
         Coupon coupon = couponRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(
-                        CouponErrorCode.COUPON_NOT_FOUND.getStatus().value(),
-                        CouponErrorCode.COUPON_NOT_FOUND.getMessage()));
+                .orElseThrow(() -> new BusinessException(CouponErrorCode.COUPON_NOT_FOUND));
         if (!coupon.getUserId().equals(userId)) {
-            throw new BusinessException(
-                    CouponErrorCode.COUPON_NOT_OWNED.getStatus().value(),
-                    CouponErrorCode.COUPON_NOT_OWNED.getMessage());
+            throw new BusinessException(CouponErrorCode.COUPON_NOT_OWNED);
         }
         return coupon;
     }
@@ -139,9 +125,7 @@ public class DefaultMysqlCouponService implements CouponService {
     public BigDecimal validateForReservation(Long couponId, String userId) {
         Coupon coupon = getCoupon(couponId, userId);
         if (coupon.getStatus() != CouponStatus.ISSUED && coupon.getStatus() != CouponStatus.RESTORED) {
-            throw new BusinessException(
-                    CouponErrorCode.COUPON_NOT_USABLE.getStatus().value(),
-                    CouponErrorCode.COUPON_NOT_USABLE.getMessage());
+            throw new BusinessException(CouponErrorCode.COUPON_NOT_USABLE);
         }
         return coupon.getDiscountAmount();
     }
@@ -153,9 +137,7 @@ public class DefaultMysqlCouponService implements CouponService {
         try {
             coupon.reserve(reservationId);
         } catch (IllegalStateException e) {
-            throw new BusinessException(
-                    CouponErrorCode.COUPON_NOT_USABLE.getStatus().value(),
-                    CouponErrorCode.COUPON_NOT_USABLE.getMessage());
+            throw new BusinessException(CouponErrorCode.COUPON_NOT_USABLE);
         }
     }
 

@@ -70,14 +70,10 @@ public class DefaultRedisCouponService implements CouponService {
     @Override
     public Coupon issueCoupon(Long campaignId, String userId) {
         CouponCampaign campaign = campaignRepository.findById(campaignId)
-                .orElseThrow(() -> new BusinessException(
-                        CouponErrorCode.CAMPAIGN_NOT_FOUND.getStatus().value(),
-                        CouponErrorCode.CAMPAIGN_NOT_FOUND.getMessage()));
+                .orElseThrow(() -> new BusinessException(CouponErrorCode.CAMPAIGN_NOT_FOUND));
 
         if (campaign.isExpired(LocalDateTime.now())) {
-            throw new BusinessException(
-                    CouponErrorCode.CAMPAIGN_EXPIRED.getStatus().value(),
-                    CouponErrorCode.CAMPAIGN_EXPIRED.getMessage());
+            throw new BusinessException(CouponErrorCode.CAMPAIGN_EXPIRED);
         }
 
         long result;
@@ -85,20 +81,14 @@ public class DefaultRedisCouponService implements CouponService {
             result = couponRedisProvider.issue(campaignId, userId);
         } catch (Exception e) {
             log.error("Coupon Redis unavailable: campaignId={}", campaignId, e);
-            throw new BusinessException(
-                    CouponErrorCode.REDIS_UNAVAILABLE.getStatus().value(),
-                    CouponErrorCode.REDIS_UNAVAILABLE.getMessage());
+            throw new BusinessException(CouponErrorCode.REDIS_UNAVAILABLE);
         }
 
         if (result == 0L) {
-            throw new BusinessException(
-                    CouponErrorCode.CAMPAIGN_SOLD_OUT.getStatus().value(),
-                    CouponErrorCode.CAMPAIGN_SOLD_OUT.getMessage());
+            throw new BusinessException(CouponErrorCode.CAMPAIGN_SOLD_OUT);
         }
         if (result == -1L) {
-            throw new BusinessException(
-                    CouponErrorCode.ALREADY_ISSUED.getStatus().value(),
-                    CouponErrorCode.ALREADY_ISSUED.getMessage());
+            throw new BusinessException(CouponErrorCode.ALREADY_ISSUED);
         }
 
         try {
@@ -116,9 +106,7 @@ public class DefaultRedisCouponService implements CouponService {
             log.error("Unexpected duplicate on MySQL insert despite Redis guard: " +
                     "campaignId={}, userId={}", campaignId, userId, e);
             couponRedisProvider.restoreStock(campaignId, userId);
-            throw new BusinessException(
-                    CouponErrorCode.ALREADY_ISSUED.getStatus().value(),
-                    CouponErrorCode.ALREADY_ISSUED.getMessage());
+            throw new BusinessException(CouponErrorCode.ALREADY_ISSUED);
         }
     }
 
@@ -132,9 +120,7 @@ public class DefaultRedisCouponService implements CouponService {
     @Transactional(readOnly = true)
     public CouponCampaign getCampaign(Long id) {
         return campaignRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(
-                        CouponErrorCode.CAMPAIGN_NOT_FOUND.getStatus().value(),
-                        CouponErrorCode.CAMPAIGN_NOT_FOUND.getMessage()));
+                .orElseThrow(() -> new BusinessException(CouponErrorCode.CAMPAIGN_NOT_FOUND));
     }
 
     @Override
@@ -147,13 +133,9 @@ public class DefaultRedisCouponService implements CouponService {
     @Transactional(readOnly = true)
     public Coupon getCoupon(Long id, String userId) {
         Coupon coupon = couponRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(
-                        CouponErrorCode.COUPON_NOT_FOUND.getStatus().value(),
-                        CouponErrorCode.COUPON_NOT_FOUND.getMessage()));
+                .orElseThrow(() -> new BusinessException(CouponErrorCode.COUPON_NOT_FOUND));
         if (!coupon.getUserId().equals(userId)) {
-            throw new BusinessException(
-                    CouponErrorCode.COUPON_NOT_OWNED.getStatus().value(),
-                    CouponErrorCode.COUPON_NOT_OWNED.getMessage());
+            throw new BusinessException(CouponErrorCode.COUPON_NOT_OWNED);
         }
         return coupon;
     }
@@ -163,9 +145,7 @@ public class DefaultRedisCouponService implements CouponService {
     public BigDecimal validateForReservation(Long couponId, String userId) {
         Coupon coupon = getCoupon(couponId, userId);
         if (coupon.getStatus() != CouponStatus.ISSUED && coupon.getStatus() != CouponStatus.RESTORED) {
-            throw new BusinessException(
-                    CouponErrorCode.COUPON_NOT_USABLE.getStatus().value(),
-                    CouponErrorCode.COUPON_NOT_USABLE.getMessage());
+            throw new BusinessException(CouponErrorCode.COUPON_NOT_USABLE);
         }
         return coupon.getDiscountAmount();
     }
@@ -177,9 +157,7 @@ public class DefaultRedisCouponService implements CouponService {
         try {
             coupon.reserve(reservationId);
         } catch (IllegalStateException e) {
-            throw new BusinessException(
-                    CouponErrorCode.COUPON_NOT_USABLE.getStatus().value(),
-                    CouponErrorCode.COUPON_NOT_USABLE.getMessage());
+            throw new BusinessException(CouponErrorCode.COUPON_NOT_USABLE);
         }
     }
 
