@@ -46,14 +46,10 @@ public class SeatService {
         long result = seatRedisProvider.releaseIfOwner(showId, seatId, userId);
 
         if (result == -1) {
-            throw new BusinessException(
-                    SeatErrorCode.SEAT_NOT_HELD.getStatus().value(),
-                    SeatErrorCode.SEAT_NOT_HELD.getMessage());
+            throw new BusinessException(SeatErrorCode.SEAT_NOT_HELD);
         }
         if (result == 0) {
-            throw new BusinessException(
-                    SeatErrorCode.SEAT_HOLD_NOT_OWNED.getStatus().value(),
-                    SeatErrorCode.SEAT_HOLD_NOT_OWNED.getMessage());
+            throw new BusinessException(SeatErrorCode.SEAT_HOLD_NOT_OWNED);
         }
 
         log.info("Seat released: showId={}, seatId={}, userId={}", showId, seatId, userId);
@@ -66,9 +62,7 @@ public class SeatService {
         // 1. 멀티 좌석 게이트를 먼저 잡는다.(원자적)
         boolean acquired = seatRedisProvider.holdAll(showId, seatIds, userId);
         if (!acquired) {
-            throw new BusinessException(
-                    SeatErrorCode.SEAT_ALREADY_HELD.getStatus().value(),
-                    SeatErrorCode.SEAT_ALREADY_HELD.getMessage());
+            throw new BusinessException(SeatErrorCode.SEAT_ALREADY_HELD);
         }
 
         try {
@@ -76,16 +70,12 @@ public class SeatService {
             List<Seat> seats = seatRepository.findAllById(seatIds);
 
             if (seats.size() != seatIds.size()) { // 존재하지 않는 좌석이 섞임
-                throw new BusinessException(
-                        SeatErrorCode.SEAT_NOT_FOUND.getStatus().value(),
-                        SeatErrorCode.SEAT_NOT_FOUND.getMessage());
+                throw new BusinessException(SeatErrorCode.SEAT_NOT_FOUND);
             }
             boolean anyReserved = seats.stream()
                     .anyMatch(s -> s.getStatus() == SeatStatus.RESERVED);
             if (anyReserved) {
-                throw new BusinessException(
-                        SeatErrorCode.SEAT_ALREADY_RESERVED.getStatus().value(),
-                        SeatErrorCode.SEAT_ALREADY_RESERVED.getMessage());
+                throw new BusinessException(SeatErrorCode.SEAT_ALREADY_RESERVED);
             }
 
             // holdSeats의 "3. 좌석별 점유 이벤트 발행" 부분을 Outbox 적재로 교체.

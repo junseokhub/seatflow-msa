@@ -34,10 +34,7 @@ public class ShowService {
 
     public Show getShow(String id) {
         return showRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(
-                        ShowErrorCode.SHOW_NOT_FOUND.getStatus().value(),
-                        ShowErrorCode.SHOW_NOT_FOUND.getMessage()
-                ));
+                .orElseThrow(() -> new BusinessException(ShowErrorCode.SHOW_NOT_FOUND));
     }
 
     /**
@@ -83,9 +80,7 @@ public class ShowService {
     @Transactional
     public void deleteShow(String id) {
         if (!showRepository.existsById(id)) {
-            throw new BusinessException(
-                    ShowErrorCode.SHOW_NOT_FOUND.getStatus().value(),
-                    ShowErrorCode.SHOW_NOT_FOUND.getMessage());
+            throw new BusinessException(ShowErrorCode.SHOW_NOT_FOUND);
         }
         showRepository.deleteById(id);
     }
@@ -104,9 +99,7 @@ public class ShowService {
         try {
             return kafkaObjectMapper.writeValueAsString(o);
         } catch (Exception e) {
-            throw new BusinessException(
-                    ShowErrorCode.INTERNAL_ERROR.getStatus().value(),
-                    ShowErrorCode.INTERNAL_ERROR.getMessage());
+            throw new BusinessException(ShowErrorCode.INTERNAL_ERROR);
         }
     }
 }
