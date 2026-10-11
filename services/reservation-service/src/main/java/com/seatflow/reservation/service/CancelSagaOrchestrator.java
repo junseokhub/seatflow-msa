@@ -63,11 +63,8 @@ public class CancelSagaOrchestrator {
             return;
         }
 
-        if (reservation.getStatus() != ReservationStatus.CONFIRMED) {
-            throw new BusinessException(ReservationErrorCode.CANCELLATION_ALREADY_IN_PROGRESS);
-        }
-
-        if (cancelSagaRepository.findByReservationId(reservationId).isPresent()) {
+        if (reservation.getStatus() != ReservationStatus.CONFIRMED
+                || cancelSagaRepository.findByReservationId(reservationId).isPresent()) {
             throw new BusinessException(ReservationErrorCode.CANCELLATION_ALREADY_IN_PROGRESS);
         }
 
