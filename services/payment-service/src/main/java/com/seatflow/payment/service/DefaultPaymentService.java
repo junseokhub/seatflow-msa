@@ -48,18 +48,7 @@ public class DefaultPaymentService implements PaymentService {
     @Transactional
     public Payment executePayment(ProcessPaymentCommand command) {
         ReservationView reservation = fetchReservation(command.reservationId());
-        if (!STATUS_PENDING.equals(reservation.status())) {
-            throw new BusinessException(PaymentErrorCode.RESERVATION_NOT_PAYABLE);
-        }
-        if (reservation.amount().compareTo(command.amount()) != 0) {
-            throw new BusinessException(PaymentErrorCode.AMOUNT_MISMATCH);
-        }
-
-        paymentRepository
-                .findByReservationIdAndStatus(command.reservationId(), PaymentStatus.COMPLETED)
-                .ifPresent(p -> {
-                    throw new BusinessException(PaymentErrorCode.PAYMENT_ALREADY_COMPLETED);
-                });
+        validatePayable(reservation, command);
 
         // 쿠폰 검증 -> 할인 계산. PG(mock)를 부르기 전에 최종 금액을 확정한다.
         // PG는 할인 개념을 몰라도 되고 몰라야 한다. payAmount만 받아 처리한다.
@@ -86,31 +75,54 @@ public class DefaultPaymentService implements PaymentService {
                 .process(payment.getPaymentNumber(), payAmount);
 
         if (success) {
-            payment.complete();
-            try {
-                paymentRepository.flush();
-            } catch (DataIntegrityViolationException e) {
-                throw new BusinessException(PaymentErrorCode.PAYMENT_ALREADY_COMPLETED);
-            }
-
-            if (command.couponId() != null) {
-                // 결제 성공 후에야 쿠폰을 확정한다. PG 승인이 실패했는데 쿠폰만
-                // 소진되는 걸 막기 위해 반드시 이 순서(PG 처리 -> 성공 확인 -> 확정)를 지킨다.
-                confirmCoupon(command.couponId(), command.userId(), command.reservationId());
-            }
-
-            outboxAppender.append(EventTopic.PAYMENT_COMPLETED, SOURCE, command.userId(),
-                    new PaymentCompletedEvent(command.reservationId(), command.userId(), payAmount));
-            log.info("Payment completed: paymentNumber={}", payment.getPaymentNumber());
+            completePayment(payment, command);
         } else {
-            payment.fail();
-            // 쿠폰은 아직 확정 안 했으므로(성공 시에만 confirm) 별도 롤백이 필요 없다.
-            // coupon-service 쪽 상태가 애초에 안 바뀌었다.
-            outboxAppender.append(EventTopic.PAYMENT_FAILED, SOURCE, command.userId(),
-                    new PaymentFailedEvent(command.reservationId(), command.userId(), payAmount));
-            log.info("Payment failed: paymentNumber={}", payment.getPaymentNumber());
+            failPayment(payment, command);
         }
         return payment;
+    }
+
+    private void validatePayable(ReservationView reservation, ProcessPaymentCommand command) {
+        if (!STATUS_PENDING.equals(reservation.status())) {
+            throw new BusinessException(PaymentErrorCode.RESERVATION_NOT_PAYABLE);
+        }
+        if (reservation.amount().compareTo(command.amount()) != 0) {
+            throw new BusinessException(PaymentErrorCode.AMOUNT_MISMATCH);
+        }
+
+        paymentRepository
+                .findByReservationIdAndStatus(command.reservationId(), PaymentStatus.COMPLETED)
+                .ifPresent(p -> {
+                    throw new BusinessException(PaymentErrorCode.PAYMENT_ALREADY_COMPLETED);
+                });
+    }
+
+    private void completePayment(Payment payment, ProcessPaymentCommand command) {
+        payment.complete();
+        try {
+            paymentRepository.flush();
+        } catch (DataIntegrityViolationException e) {
+            throw new BusinessException(PaymentErrorCode.PAYMENT_ALREADY_COMPLETED);
+        }
+
+        if (command.couponId() != null) {
+            // 결제 성공 후에야 쿠폰을 확정한다. PG 승인이 실패했는데 쿠폰만
+            // 소진되는 걸 막기 위해 반드시 이 순서(PG 처리 -> 성공 확인 -> 확정)를 지킨다.
+            confirmCoupon(command.couponId(), command.userId(), command.reservationId());
+        }
+
+        outboxAppender.append(EventTopic.PAYMENT_COMPLETED, SOURCE, command.userId(),
+                new PaymentCompletedEvent(command.reservationId(), command.userId(), payment.getAmount()));
+        log.info("Payment completed: paymentNumber={}", payment.getPaymentNumber());
+    }
+
+    private void failPayment(Payment payment, ProcessPaymentCommand command) {
+        payment.fail();
+        // 쿠폰은 아직 확정 안 했으므로(성공 시에만 confirm) 별도 롤백이 필요 없다.
+        // coupon-service 쪽 상태가 애초에 안 바뀌었다.
+        outboxAppender.append(EventTopic.PAYMENT_FAILED, SOURCE, command.userId(),
+                new PaymentFailedEvent(command.reservationId(), command.userId(), payment.getAmount()));
+        log.info("Payment failed: paymentNumber={}", payment.getPaymentNumber());
     }
 
     private CouponClient.CouponValidationView validateCoupon(Long couponId, String userId) {
