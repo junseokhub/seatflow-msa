@@ -20,6 +20,8 @@ dependencies {
     api(project(":libs:common-web"))
 
     api("org.springframework.cloud:spring-cloud-starter-openfeign")
+    // Feign 호출 헤더에 traceId를 실어 보내 서비스 간 추적을 잇는다.
+    api("io.github.openfeign:feign-micrometer")
 
     // 서킷 브레이커. Feign은 spring-cloud-starter-circuitbreaker-resilience4j를 통해
     // circuitBreakerFactory를 자동으로 연동한다(spring.cloud.openfeign.circuitbreaker.enabled).
