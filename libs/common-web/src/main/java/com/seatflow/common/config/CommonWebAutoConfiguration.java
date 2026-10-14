@@ -1,6 +1,7 @@
 package com.seatflow.common.config;
 
 import com.seatflow.common.exception.GlobalExceptionHandler;
+import com.seatflow.common.logging.RequestLoggingFilter;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Bean;
 
@@ -10,5 +11,10 @@ public class CommonWebAutoConfiguration {
     @Bean
     public GlobalExceptionHandler globalExceptionHandler() {
         return new GlobalExceptionHandler();
+    }
+
+    @Bean
+    public RequestLoggingFilter requestLoggingFilter() {
+        return new RequestLoggingFilter();
     }
 }

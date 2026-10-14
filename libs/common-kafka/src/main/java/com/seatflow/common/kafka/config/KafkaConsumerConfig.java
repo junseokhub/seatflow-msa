@@ -74,6 +74,8 @@ public class KafkaConsumerConfig {
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory);
         factory.setCommonErrorHandler(kafkaErrorHandler);
+        // 발행 측 traceId 헤더를 이어받아 리스너 로그에도 같은 traceId가 찍히게 한다
+        factory.getContainerProperties().setObservationEnabled(true);
         return factory;
     }
 }

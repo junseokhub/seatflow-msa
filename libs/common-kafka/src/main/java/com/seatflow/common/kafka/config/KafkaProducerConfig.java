@@ -35,7 +35,10 @@ public class KafkaProducerConfig {
     @Primary
     @Bean
     public KafkaTemplate<String, Object> kafkaTemplate(ProducerFactory<String, Object> producerFactory) {
-        return new KafkaTemplate<>(producerFactory);
+        KafkaTemplate<String, Object> template = new KafkaTemplate<>(producerFactory);
+        // 템플릿을 직접 만들면 spring.kafka.template.observation-enabled가 안 먹어서 여기서 켠다(traceId 헤더 전파)
+        template.setObservationEnabled(true);
+        return template;
     }
 
     // 이미 직렬화된 문자열을 그대로 발행하는 템플릿 (이중 직렬화 방지)
@@ -50,7 +53,9 @@ public class KafkaProducerConfig {
     @Bean
     public KafkaTemplate<String, String> stringKafkaTemplate(
             ProducerFactory<String, String> stringProducerFactory) {
-        return new KafkaTemplate<>(stringProducerFactory);
+        KafkaTemplate<String, String> template = new KafkaTemplate<>(stringProducerFactory);
+        template.setObservationEnabled(true);
+        return template;
     }
 
     private Map<String, Object> baseConfig(KafkaBootstrapProperties kafkaProperties) {
