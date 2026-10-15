@@ -231,7 +231,7 @@ class DefaultRedisCouponServiceTest {
         void getCouponReturnsOwnedCoupon() {
             Coupon coupon = Coupon.builder()
                     .campaignId(1L).userId("user1").discountAmount(BigDecimal.valueOf(1000)).build();
-            given(couponRepository.findById(1L)).willReturn(Optional.of(coupon));
+            given(couponRepository.findByIdAndUserId(1L, "user1")).willReturn(Optional.of(coupon));
 
             Coupon result = couponService.getCoupon(1L, "user1");
 
@@ -239,21 +239,19 @@ class DefaultRedisCouponServiceTest {
         }
 
         @Test
-        @DisplayName("getCoupon()은 본인 쿠폰이 아니면 COUPON_NOT_OWNED 예외를 던진다")
+        @DisplayName("getCoupon()은 본인 쿠폰이 아니면 존재 여부를 숨기고 COUPON_NOT_FOUND 예외를 던진다")
         void getCouponThrowsWhenNotOwned() {
-            Coupon coupon = Coupon.builder()
-                    .campaignId(1L).userId("owner").discountAmount(BigDecimal.valueOf(1000)).build();
-            given(couponRepository.findById(1L)).willReturn(Optional.of(coupon));
+            given(couponRepository.findByIdAndUserId(1L, "someone-else")).willReturn(Optional.empty());
 
             assertThatThrownBy(() -> couponService.getCoupon(1L, "someone-else"))
                     .isInstanceOf(BusinessException.class)
-                    .hasMessage(CouponErrorCode.COUPON_NOT_OWNED.getMessage());
+                    .hasMessage(CouponErrorCode.COUPON_NOT_FOUND.getMessage());
         }
 
         @Test
         @DisplayName("getCoupon()은 존재하지 않으면 COUPON_NOT_FOUND 예외를 던진다")
         void getCouponThrowsWhenNotFound() {
-            given(couponRepository.findById(999L)).willReturn(Optional.empty());
+            given(couponRepository.findByIdAndUserId(999L, "user1")).willReturn(Optional.empty());
 
             assertThatThrownBy(() -> couponService.getCoupon(999L, "user1"))
                     .isInstanceOf(BusinessException.class)
@@ -270,7 +268,7 @@ class DefaultRedisCouponServiceTest {
         void returnsDiscountAmountForIssuedCoupon() {
             Coupon coupon = Coupon.builder()
                     .campaignId(1L).userId("user1").discountAmount(BigDecimal.valueOf(3000)).build();
-            given(couponRepository.findById(1L)).willReturn(Optional.of(coupon));
+            given(couponRepository.findByIdAndUserId(1L, "user1")).willReturn(Optional.of(coupon));
 
             BigDecimal result = couponService.validateForReservation(1L, "user1");
 
@@ -284,7 +282,7 @@ class DefaultRedisCouponServiceTest {
                     .campaignId(1L).userId("user1").discountAmount(BigDecimal.valueOf(3000)).build();
             coupon.reserve(100L);
             coupon.restore();
-            given(couponRepository.findById(1L)).willReturn(Optional.of(coupon));
+            given(couponRepository.findByIdAndUserId(1L, "user1")).willReturn(Optional.of(coupon));
 
             BigDecimal result = couponService.validateForReservation(1L, "user1");
 
@@ -298,7 +296,7 @@ class DefaultRedisCouponServiceTest {
                     .campaignId(1L).userId("user1").discountAmount(BigDecimal.valueOf(3000)).build();
             coupon.reserve(100L);
             coupon.confirmUse();
-            given(couponRepository.findById(1L)).willReturn(Optional.of(coupon));
+            given(couponRepository.findByIdAndUserId(1L, "user1")).willReturn(Optional.of(coupon));
 
             assertThatThrownBy(() -> couponService.validateForReservation(1L, "user1"))
                     .isInstanceOf(BusinessException.class)
@@ -315,7 +313,7 @@ class DefaultRedisCouponServiceTest {
         void confirmsIssuedCoupon() {
             Coupon coupon = Coupon.builder()
                     .campaignId(1L).userId("user1").discountAmount(BigDecimal.valueOf(3000)).build();
-            given(couponRepository.findById(1L)).willReturn(Optional.of(coupon));
+            given(couponRepository.findByIdAndUserId(1L, "user1")).willReturn(Optional.of(coupon));
 
             couponService.confirmForReservation(1L, "user1", 100L);
 
@@ -330,7 +328,7 @@ class DefaultRedisCouponServiceTest {
                     .campaignId(1L).userId("user1").discountAmount(BigDecimal.valueOf(3000)).build();
             coupon.reserve(100L);
             coupon.confirmUse();
-            given(couponRepository.findById(1L)).willReturn(Optional.of(coupon));
+            given(couponRepository.findByIdAndUserId(1L, "user1")).willReturn(Optional.of(coupon));
 
             assertThatThrownBy(() -> couponService.confirmForReservation(1L, "user1", 200L))
                     .isInstanceOf(BusinessException.class)
