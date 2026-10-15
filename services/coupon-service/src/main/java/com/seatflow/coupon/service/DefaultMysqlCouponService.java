@@ -112,12 +112,8 @@ public class DefaultMysqlCouponService implements CouponService {
     @Override
     @Transactional(readOnly = true)
     public Coupon getCoupon(Long id, String userId) {
-        Coupon coupon = couponRepository.findById(id)
+        return couponRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new BusinessException(CouponErrorCode.COUPON_NOT_FOUND));
-        if (!coupon.getUserId().equals(userId)) {
-            throw new BusinessException(CouponErrorCode.COUPON_NOT_OWNED);
-        }
-        return coupon;
     }
 
     @Override
