@@ -67,16 +67,7 @@ public class SeatService {
 
         try {
             // 2. 점유를 쥔 상태에서 좌석들이 이미 팔렸는지 DB로 검증
-            List<Seat> seats = seatRepository.findAllById(seatIds);
-
-            if (seats.size() != seatIds.size()) { // 존재하지 않는 좌석이 섞임
-                throw new BusinessException(SeatErrorCode.SEAT_NOT_FOUND);
-            }
-            boolean anyReserved = seats.stream()
-                    .anyMatch(s -> s.getStatus() == SeatStatus.RESERVED);
-            if (anyReserved) {
-                throw new BusinessException(SeatErrorCode.SEAT_ALREADY_RESERVED);
-            }
+            Map<Long, Seat> seatById = findHoldableSeats(seatIds);
 
             // holdSeats의 "3. 좌석별 점유 이벤트 발행" 부분을 Outbox 적재로 교체.
             // 기존엔 kafkaTemplate.send로 직접 발행(dual-write). 이제 Outbox에 적재하고
@@ -87,8 +78,6 @@ public class SeatService {
 
             // 3. 좌석별 점유 이벤트 발행 (가격·공연일을 함께 실어 reservation이 서버측 값 확보)
             //    Outbox에 적재 ->스케줄러가 발행 보장 (좌석 검증과 같은 트랜잭션)
-            Map<Long, Seat> seatById = seats.stream()
-                    .collect(Collectors.toMap(Seat::getId, Function.identity()));
             for (Long seatId : seatIds) {
                 Seat seat = seatById.get(seatId);
                 BigDecimal price = BigDecimal.valueOf(seat.getPrice());
@@ -107,6 +96,22 @@ public class SeatService {
         // 점유 성공 사실 발행 (SSE는 이 사실을 구독해서 알아서 전송)
         seatIds.forEach(id ->
                 eventPublisher.publishEvent(new SeatStatusChangedEvent(showId, id, "HELD")));
+    }
+
+    private Map<Long, Seat> findHoldableSeats(List<Long> seatIds) {
+        List<Seat> seats = seatRepository.findAllById(seatIds);
+
+        if (seats.size() != seatIds.size()) { // 존재하지 않는 좌석이 섞임
+            throw new BusinessException(SeatErrorCode.SEAT_NOT_FOUND);
+        }
+        boolean anyReserved = seats.stream()
+                .anyMatch(s -> s.getStatus() == SeatStatus.RESERVED);
+        if (anyReserved) {
+            throw new BusinessException(SeatErrorCode.SEAT_ALREADY_RESERVED);
+        }
+
+        return seats.stream()
+                .collect(Collectors.toMap(Seat::getId, Function.identity()));
     }
 
     // SeatService에 추가 (기존 필드에 SeatRepository, SeatRedisProvider 이미 있음)
