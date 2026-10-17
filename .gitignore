@@ -64,3 +64,8 @@ $RECYCLE.BIN/
 # ===========================
 # 로컬 docker-compose override
 docker-compose.override.yml
+
+# ===========================
+# Graphify
+# ===========================
+graphify-out/
