@@ -211,27 +211,28 @@ public class DefaultPaymentService implements PaymentService {
                 .get(payment.getPaymentMethod())
                 .refund(payment.getPaymentNumber(), refundAmount);
 
-        if (success) {
-            payment.refund(refundAmount);
-
-            if (payment.getCouponId() != null) {
-                // 환불 성공 직후 같은 서비스 안에서 바로 쿠폰 복원.
-                // reservation은 쿠폰의 존재 자체를 몰라도 된다. 쿠폰 도메인 지식은 payment 안에만 있다.
-                try {
-                    couponClient.restoreCoupon(reservationId);
-                } catch (Exception e) {
-                    log.error("Coupon restore failed, needs manual recovery: reservationId={}, couponId={}",
-                            reservationId, payment.getCouponId(), e);
-                }
-            }
-
-            outboxAppender.append(EventTopic.PAYMENT_REFUNDED, SOURCE, String.valueOf(reservationId),
-                    new PaymentRefundedEvent(sagaId, reservationId, refundAmount));
-            log.info("Refund completed: sagaId={}, paymentNumber={}", sagaId, payment.getPaymentNumber());
-        } else {
+        if (!success) {
             outboxAppender.append(EventTopic.PAYMENT_REFUND_FAILED, SOURCE, String.valueOf(reservationId),
                     new PaymentRefundFailedEvent(sagaId, reservationId, "PG 환불 승인 거절"));
             log.warn("Refund failed: sagaId={}, paymentNumber={}", sagaId, payment.getPaymentNumber());
+            return;
         }
+
+        payment.refund(refundAmount);
+
+        if (payment.getCouponId() != null) {
+            // 환불 성공 직후 같은 서비스 안에서 바로 쿠폰 복원.
+            // reservation은 쿠폰의 존재 자체를 몰라도 된다. 쿠폰 도메인 지식은 payment 안에만 있다.
+            try {
+                couponClient.restoreCoupon(reservationId);
+            } catch (Exception e) {
+                log.error("Coupon restore failed, needs manual recovery: reservationId={}, couponId={}",
+                        reservationId, payment.getCouponId(), e);
+            }
+        }
+
+        outboxAppender.append(EventTopic.PAYMENT_REFUNDED, SOURCE, String.valueOf(reservationId),
+                new PaymentRefundedEvent(sagaId, reservationId, refundAmount));
+        log.info("Refund completed: sagaId={}, paymentNumber={}", sagaId, payment.getPaymentNumber());
     }
 }
