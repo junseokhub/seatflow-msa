@@ -24,6 +24,9 @@ import java.util.Date;
 @RequiredArgsConstructor
 public class JwtProvider {
 
+    // 토큰 발급자. 게이트웨이(Kong 번들 jwt 플러그인)가 이 값으로 검증 키를 찾는다
+    private static final String ISSUER = "seatflow-auth";
+
     private final JwtProperties jwtProperties;
     private final JwtValidator jwtValidator;
 
@@ -33,6 +36,7 @@ public class JwtProvider {
                 .claim("email", email)
                 .claim("role", role.name())
                 .claim("type", "access")
+                .issuer(ISSUER)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtProperties.getAccessTokenExpiration()))
                 .signWith(getPrivateKey())
@@ -43,6 +47,7 @@ public class JwtProvider {
         return Jwts.builder()
                 .subject(userId)
                 .claim("type", "refresh")
+                .issuer(ISSUER)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtProperties.getRefreshTokenExpiration()))
                 .signWith(getPrivateKey())
