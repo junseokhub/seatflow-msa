@@ -4,3 +4,55 @@ spring:
       ddl-auto: create-drop
   flyway:
     enabled: false
+
+  # 운영 설정(application.yml)은 gitignore 라 CI·새 체크아웃엔 없다 → 테스트가 직접 채운다
+  kafka:
+    bootstrap-servers: localhost:9092   # 프로듀서는 지연 연결이라 실제 브로커 없이 컨텍스트가 뜬다
+
+# 테스트 전용 키쌍 (운영 키와 무관)
+auth:
+  jwt:
+    private-key: |
+      -----BEGIN PRIVATE KEY-----
+      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCouVcCAAJ1ChO2
+      aRr7DjHID8cqDgpoEFPiJlgKWvhvU8m04hIBBdcFPiMpxKLrcDakSNLKalSPyCuD
+      PAUS5h39s6VV0VSnRV70lloXEoGgIIvfxOHBCJzsfH3gxmD6WBR9AHyn/1lFR3EC
+      J2QsM2D/91Ezi95ubtZVUbPx+uIKG2+T0fWYxyI7Hjt4IMxaxYRMnENxaJLQC3+T
+      wgjIPy2nmO0w1GESUwvNhUB8QPzN4HZm4oRMTNPknr5u09NK5NFlA7fSyXQ125+0
+      gZ0mibVmg9aFo3lGsGmmoengf/wldHhMMWOBQN3u04uVNWeDVYaYPmHizFsWSThS
+      p0E4UPrrAgMBAAECggEAEnE70PSmUBu7Xt9rOxDooRkUaITjX0+Vk60kR3F9IVIT
+      xKlHVYRJZgHOPyUGt9xqpJdvLv/jYVn8Y5peZZvwoEgQJOq+KZB8GhkLHOWBdLrJ
+      /zoagQqLeI/9BGI6vHJ/PtCcT5KqM9fkwtsCaJBvJFtorU03EXQdCnNlS2hkZ709
+      JVfDKcP21wnB625XhOG0G/+/7R6M1w1l7Lpm4WTuvIGxqrf0ewpzoGJWjwQbsQ4x
+      90+Naov3qLnFUqOf+YNUqNI2bR/IYEmzuhJAmV79fpwVsGc9zvDXN5BsZWImTgNI
+      xoiZAveODviFbmhQytDB224vWoLATyBzecFZsM1qbQKBgQDtYdebDaYJjez0IcAN
+      5UCJoNPjvo9uW204YsOG9jtVmwjUCP1G+wYKXCzlYMCR++CvRc0iAArdkEWpXghp
+      nT9ateYG9Qk0mpWBmyRKi4mdbcUUkGPNHfv6QZkPZ8C8x70bH3FQhueR/sKX/120
+      8tcTgUiF5lzq/iavCvxSm7sbBwKBgQC19PqIO1xBOEIqcAJ46Ew/WYooqzOOyVdu
+      TPtynyaFkiY0Q9p9Yrm/Gnhuf/Obbyxbz8gmGIhtfJcMS6MP3fOT8m5AH2jj2ZiP
+      ySLnqK8wxPW1xa+FV6hVJkINK83kkjXYAigaJA0a42B4HhR6gbcM5NH8xHxYYyek
+      l+KO5zxT/QKBgQCMfaLAJqTE9NVva2YiEzNOAPxGxqpW0w9iFrnH74UQVjA0ZZmY
+      38okaYc8vjVacOr6cOJGJCZKGS/RXFC4SROM2Sjppy4qju67BRnGcK0imivQzt/y
+      LrPJ2fb/chVU5RXbrpE+6oi1FEUQ9lb8V9jIt3Q3oy4M+hvk7yiEr5xeEwKBgGqN
+      fTDN4iZnNYf4c9ot3oiyfI94Qgb5rPNwrUbgIATUIv80RPxsFe3tKF09HIEHR2i0
+      crasYygKb8HJgUHHbd5Td3ChdCEJyadZ19DlHUJn9KNvkmt5e5/xeXiREE8rt9A4
+      4xb7yZjXUiTFKKTc1T79uGJXBaIU3qAqOYgJrXBZAoGALVpooLtUBjDG1tQMklxv
+      TxaLYSk4q+fzVJ545wRVLHxM7Fkuk1mcLw3H7YhYjY4jwI0WQW89mqDr2dj9luAA
+      bCvpb8w8V7RcMTZwRQsIlv6FFIMt/pPd5ttkNt0UxnJ7fCsz+wfgF2CgHp+9tkMC
+      esiFUzulSnwQEYnH7GvKduo=
+      -----END PRIVATE KEY-----
+    access-token-expiration: 3600000
+    refresh-token-expiration: 604800000
+    service-token-expiration: 300000
+
+jwt:
+  public-key: |
+    -----BEGIN PUBLIC KEY-----
+    MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqLlXAgACdQoTtmka+w4x
+    yA/HKg4KaBBT4iZYClr4b1PJtOISAQXXBT4jKcSi63A2pEjSympUj8grgzwFEuYd
+    /bOlVdFUp0Ve9JZaFxKBoCCL38ThwQic7Hx94MZg+lgUfQB8p/9ZRUdxAidkLDNg
+    //dRM4vebm7WVVGz8friChtvk9H1mMciOx47eCDMWsWETJxDcWiS0At/k8IIyD8t
+    p5jtMNRhElMLzYVAfED8zeB2ZuKETEzT5J6+btPTSuTRZQO30sl0NduftIGdJom1
+    ZoPWhaN5RrBppqHp4H/8JXR4TDFjgUDd7tOLlTVng1WGmD5h4sxbFkk4UqdBOFD6
+    6wIDAQAB
+    -----END PUBLIC KEY-----
