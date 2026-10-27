@@ -25,10 +25,15 @@ public class ReservationController {
 
     private final ReservationService reservationService;
 
+    /**
+     * 본인 예매 단건 조회. id만 알면 남의 예매를 볼 수 있는 걸 막는다.
+     */
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<ReservationResponse>> getReservation(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<ReservationResponse>> getReservation(
+            @PathVariable Long id,
+            Authentication authentication) {
         return ResponseEntity.ok(ApiResponse.ok(
-                ReservationResponse.from(reservationService.getReservation(id))
+                ReservationResponse.from(reservationService.getReservation(id, authentication.getName()))
         ));
     }
 

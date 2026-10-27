@@ -19,6 +19,7 @@ import com.seatflow.payment.strategy.PaymentStrategyRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -83,6 +84,10 @@ public class DefaultPaymentService implements PaymentService {
     }
 
     private void validatePayable(ReservationView reservation, ProcessPaymentCommand command) {
+        // 남의 예매면 존재 여부를 숨기도록 reservation-service와 같은 NOT_FOUND로 응답한다.
+        if (!command.userId().equals(reservation.userId())) {
+            throw new BusinessException(PaymentErrorCode.RESERVATION_NOT_FOUND);
+        }
         if (!STATUS_PENDING.equals(reservation.status())) {
             throw new BusinessException(PaymentErrorCode.RESERVATION_NOT_PAYABLE);
         }
@@ -183,6 +188,8 @@ public class DefaultPaymentService implements PaymentService {
      * 쿠폰을 썼던 결제면 환불 성공 직후 쿠폰도 같이 복원한다.
      * 결과에 따라 성공/실패 응답을 발행한다.
      *
+     * 쿠폰 복원이 실패하면 Payment에 대기 표시가 남고, 중복 명령이나 재처리 스케줄러가 다시 복원한다.
+     *
      * 멱등성: Payment.refund()가 이미 REFUNDED면 무시하는 상태 가드다.
      * 다만 같은 명령이 중복 도착해 이미 REFUNDED 처리된 뒤라면, 응답도 다시 성공으로 발행해 오케스트레이터가 놓친 응답을 다시 받을 수 있게 한다(at-least-once 전제).
      */
@@ -202,6 +209,7 @@ public class DefaultPaymentService implements PaymentService {
         }
 
         if (payment.getStatus() == PaymentStatus.REFUNDED) {
+            restoreCouponIfPending(payment);   // 이전 복원이 실패했다면 중복 명령을 재시도 기회로 쓴다
             outboxAppender.append(EventTopic.PAYMENT_REFUNDED, SOURCE, String.valueOf(reservationId),
                     new PaymentRefundedEvent(sagaId, reservationId, payment.getRefundedAmount()));
             return;
@@ -220,19 +228,43 @@ public class DefaultPaymentService implements PaymentService {
 
         payment.refund(refundAmount);
 
-        if (payment.getCouponId() != null) {
-            // 환불 성공 직후 같은 서비스 안에서 바로 쿠폰 복원.
-            // reservation은 쿠폰의 존재 자체를 몰라도 된다. 쿠폰 도메인 지식은 payment 안에만 있다.
-            try {
-                couponClient.restoreCoupon(reservationId);
-            } catch (Exception e) {
-                log.error("Coupon restore failed, needs manual recovery: reservationId={}, couponId={}",
-                        reservationId, payment.getCouponId(), e);
-            }
-        }
+        // 환불 성공 직후 같은 서비스 안에서 바로 쿠폰 복원.
+        // reservation은 쿠폰의 존재 자체를 몰라도 된다. 쿠폰 도메인 지식은 payment 안에만 있다.
+        restoreCouponIfPending(payment);
 
         outboxAppender.append(EventTopic.PAYMENT_REFUNDED, SOURCE, String.valueOf(reservationId),
                 new PaymentRefundedEvent(sagaId, reservationId, refundAmount));
         log.info("Refund completed: sagaId={}, paymentNumber={}", sagaId, payment.getPaymentNumber());
+    }
+
+    /**
+     * 환불은 됐지만 쿠폰 복원이 실패해 남아 있는 결제를 주기적으로 다시 복원한다.
+     * coupon-service의 복원은 멱등이라 여러 인스턴스가 같은 건을 동시에 재시도해도 안전하다.
+     */
+    @Scheduled(fixedDelay = 60_000)
+    @Transactional
+    public void retryPendingCouponRestores() {
+        paymentRepository.findTop100ByCouponRestorePendingTrue().forEach(this::restoreCouponIfPending);
+    }
+
+    /**
+     * 복원이 성공했을 때만 대기 표시를 지운다. 실패하면 표시가 남아 다음 재처리 때 다시 시도한다.
+     * fallback은 예외 대신 실패 응답을 주므로 응답의 success도 확인한다.
+     */
+    private void restoreCouponIfPending(Payment payment) {
+        if (!payment.isCouponRestorePending()) {
+            return;
+        }
+        try {
+            if (couponClient.restoreCoupon(payment.getReservationId()).isSuccess()) {
+                payment.completeCouponRestore();
+                return;
+            }
+            log.error("Coupon restore rejected, will retry: reservationId={}, couponId={}",
+                    payment.getReservationId(), payment.getCouponId());
+        } catch (Exception e) {
+            log.error("Coupon restore failed, will retry: reservationId={}, couponId={}",
+                    payment.getReservationId(), payment.getCouponId(), e);
+        }
     }
 }

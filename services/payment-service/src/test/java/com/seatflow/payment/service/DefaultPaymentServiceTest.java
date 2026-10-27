@@ -23,6 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -80,6 +81,20 @@ class DefaultPaymentServiceTest {
             assertThatThrownBy(() -> paymentService.executePayment(command(BigDecimal.valueOf(50000), null)))
                     .isInstanceOf(BusinessException.class)
                     .hasMessage(PaymentErrorCode.RESERVATION_NOT_PAYABLE.getMessage());
+        }
+
+        @Test
+        @DisplayName("요청자가 예매 소유자가 아니면 RESERVATION_NOT_FOUND 예외를 던지고 결제를 만들지 않는다")
+        void throwsWhenRequesterIsNotReservationOwner() {
+            var othersView = new ReservationClient.ReservationView(
+                    1L, "other-user", "PENDING", BigDecimal.valueOf(50000));
+            given(reservationClient.getReservation(1L))
+                    .willReturn(ApiResponse.ok(othersView));
+
+            assertThatThrownBy(() -> paymentService.executePayment(command(BigDecimal.valueOf(50000), null)))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessage(PaymentErrorCode.RESERVATION_NOT_FOUND.getMessage());
+            verify(paymentRepository, never()).save(any());
         }
 
         @Test
@@ -373,6 +388,7 @@ class DefaultPaymentServiceTest {
         @DisplayName("쿠폰을 썼던 결제의 환불이 성공하면 쿠폰도 함께 복원한다")
         void restoresCouponAfterSuccessfulRefundOfCouponPayment() {
             Payment payment = Payment.builder()
+                    .reservationId(1L)
                     .paymentMethod(PaymentMethod.CREDIT_CARD)
                     .couponId(10L)
                     .status(PaymentStatus.COMPLETED)
@@ -381,16 +397,19 @@ class DefaultPaymentServiceTest {
                     .willReturn(Optional.of(payment));
             given(strategyRegistry.get(PaymentMethod.CREDIT_CARD)).willReturn(paymentStrategy);
             given(paymentStrategy.refund(anyString(), any())).willReturn(true);
+            given(couponClient.restoreCoupon(1L)).willReturn(ApiResponse.ok(null));
 
             paymentService.executeRefund(100L, 1L, BigDecimal.valueOf(45000));
 
             verify(couponClient).restoreCoupon(1L);
+            assertThat(payment.isCouponRestorePending()).isFalse();
         }
 
         @Test
         @DisplayName("쿠폰 복원이 실패해도 환불 자체는 성공으로 처리되고 이벤트가 발행된다")
         void refundSucceedsEvenIfCouponRestoreFails() {
             Payment payment = Payment.builder()
+                    .reservationId(1L)
                     .paymentMethod(PaymentMethod.CREDIT_CARD)
                     .couponId(10L)
                     .status(PaymentStatus.COMPLETED)
@@ -405,7 +424,60 @@ class DefaultPaymentServiceTest {
             paymentService.executeRefund(100L, 1L, BigDecimal.valueOf(45000));
 
             assertThat(payment.getStatus()).isEqualTo(PaymentStatus.REFUNDED);
+            assertThat(payment.isCouponRestorePending()).isTrue();   // 재처리 대상으로 남는다
             verify(outboxAppender).append(any(), anyString(), anyString(), any());
+        }
+
+        @Test
+        @DisplayName("쿠폰 복원이 실패 응답(fallback)을 받아도 재처리 대상으로 남는다")
+        void keepsPendingWhenCouponRestoreReturnsFailure() {
+            Payment payment = refundedPaymentWithPendingCoupon();
+            given(couponClient.restoreCoupon(1L)).willReturn(ApiResponse.fail("coupon down"));
+
+            paymentService.retryPendingCouponRestores();
+
+            assertThat(payment.isCouponRestorePending()).isTrue();
+        }
+
+        @Test
+        @DisplayName("이미 REFUNDED인데 쿠폰 복원이 남아 있으면 중복 명령에서 복원을 재시도한다")
+        void retriesPendingCouponRestoreOnDuplicateCommand() {
+            Payment payment = refundedPaymentWithPendingCoupon();
+            given(paymentRepository.findByReservationIdAndStatus(1L, PaymentStatus.COMPLETED))
+                    .willReturn(Optional.empty());
+            given(paymentRepository.findByReservationIdAndStatus(1L, PaymentStatus.REFUNDED))
+                    .willReturn(Optional.of(payment));
+            given(couponClient.restoreCoupon(1L)).willReturn(ApiResponse.ok(null));
+
+            paymentService.executeRefund(100L, 1L, BigDecimal.valueOf(45000));
+
+            verify(strategyRegistry, never()).get(any());
+            verify(couponClient).restoreCoupon(1L);
+            assertThat(payment.isCouponRestorePending()).isFalse();
+        }
+
+        @Test
+        @DisplayName("재처리 스케줄러는 복원 대기 중인 결제의 쿠폰을 복원하고 대기 표시를 지운다")
+        void schedulerRestoresPendingCoupons() {
+            Payment payment = refundedPaymentWithPendingCoupon();
+            given(couponClient.restoreCoupon(1L)).willReturn(ApiResponse.ok(null));
+
+            paymentService.retryPendingCouponRestores();
+
+            verify(couponClient).restoreCoupon(1L);
+            assertThat(payment.isCouponRestorePending()).isFalse();
+        }
+
+        private Payment refundedPaymentWithPendingCoupon() {
+            Payment payment = Payment.builder()
+                    .reservationId(1L)
+                    .paymentMethod(PaymentMethod.CREDIT_CARD)
+                    .couponId(10L)
+                    .status(PaymentStatus.COMPLETED)
+                    .build();
+            payment.refund(BigDecimal.valueOf(45000));
+            lenient().when(paymentRepository.findTop100ByCouponRestorePendingTrue()).thenReturn(List.of(payment));
+            return payment;
         }
     }
 }

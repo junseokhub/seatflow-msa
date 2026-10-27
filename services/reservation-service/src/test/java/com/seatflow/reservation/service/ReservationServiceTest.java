@@ -115,22 +115,22 @@ class ReservationServiceTest {
     class GetReservation {
 
         @Test
-        @DisplayName("존재하는 예매를 반환한다")
-        void returnsExistingReservation() {
+        @DisplayName("본인 예매를 반환한다")
+        void returnsOwnedReservation() {
             Reservation reservation = reservationWithStatus(ReservationStatus.PENDING);
-            given(reservationRepository.findById(1L)).willReturn(Optional.of(reservation));
+            given(reservationRepository.findByIdAndUserId(1L, "user1")).willReturn(Optional.of(reservation));
 
-            Reservation result = reservationService.getReservation(1L);
+            Reservation result = reservationService.getReservation(1L, "user1");
 
             assertThat(result).isEqualTo(reservation);
         }
 
         @Test
-        @DisplayName("존재하지 않으면 RESERVATION_NOT_FOUND 예외를 던진다")
-        void throwsWhenNotFound() {
-            given(reservationRepository.findById(999L)).willReturn(Optional.empty());
+        @DisplayName("존재하지 않거나 본인 예매가 아니면 RESERVATION_NOT_FOUND 예외를 던진다")
+        void throwsWhenNotFoundOrNotOwned() {
+            given(reservationRepository.findByIdAndUserId(1L, "someone-else")).willReturn(Optional.empty());
 
-            assertThatThrownBy(() -> reservationService.getReservation(999L))
+            assertThatThrownBy(() -> reservationService.getReservation(1L, "someone-else"))
                     .isInstanceOf(BusinessException.class)
                     .hasMessage(ReservationErrorCode.RESERVATION_NOT_FOUND.getMessage());
         }
