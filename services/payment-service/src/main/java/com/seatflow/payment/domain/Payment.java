@@ -46,6 +46,9 @@ public class Payment {
     private Long couponId;
     private BigDecimal discountAmount;
 
+    @Column(nullable = false)
+    private boolean couponRestorePending;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -86,6 +89,11 @@ public class Payment {
         }
         this.status = PaymentStatus.REFUNDED;
         this.refundedAmount = refundedAmount;
+        this.couponRestorePending = couponId != null;   // 쿠폰 복원이 끝나기 전까지 재처리 대상으로 남긴다
+    }
+
+    public void completeCouponRestore() {
+        this.couponRestorePending = false;
     }
 
     /**

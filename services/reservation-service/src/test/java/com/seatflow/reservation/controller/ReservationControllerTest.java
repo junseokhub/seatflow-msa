@@ -1,10 +1,12 @@
 package com.seatflow.reservation.controller;
 
+import com.seatflow.common.exception.BusinessException;
 import com.seatflow.common.exception.GlobalExceptionHandler;
 import com.seatflow.common.security.JwtAuthenticationFilter;
 import com.seatflow.reservation.config.SecurityConfig;
 import com.seatflow.reservation.domain.Reservation;
 import com.seatflow.reservation.domain.ReservationStatus;
+import com.seatflow.reservation.exception.ReservationErrorCode;
 import com.seatflow.reservation.service.ReservationService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
@@ -69,12 +71,23 @@ class ReservationControllerTest {
     @WithMockUser(username = "user1")
     @DisplayName("인증된 사용자가 예매 단건 조회하면 200을 반환한다")
     void authenticatedUserCanGetReservation() throws Exception {
-        given(reservationService.getReservation(1L)).willReturn(reservation());
+        given(reservationService.getReservation(1L, "user1")).willReturn(reservation());
 
         mockMvc.perform(get("/api/reservations/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.userId").value("user1"));
+    }
+
+    @Test
+    @WithMockUser(username = "other-user")
+    @DisplayName("타인의 예매를 단건 조회하면 존재 여부를 숨기고 404가 나온다")
+    void cannotGetOtherUsersReservation() throws Exception {
+        given(reservationService.getReservation(1L, "other-user"))
+                .willThrow(new BusinessException(ReservationErrorCode.RESERVATION_NOT_FOUND));
+
+        mockMvc.perform(get("/api/reservations/1"))
+                .andExpect(status().isNotFound());
     }
 
     @Test

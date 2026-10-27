@@ -67,9 +67,12 @@ public class ReservationService {
         }
     }
 
+    /**
+     * 본인 예매 단건 조회. 소유권을 쿼리 조건으로 검증해, 남의 예매면 존재 여부를 숨기고 NOT_FOUND로 응답한다.
+     */
     @Transactional(readOnly = true)
-    public Reservation getReservation(Long id) {
-        return reservationRepository.findById(id)
+    public Reservation getReservation(Long id, String userId) {
+        return reservationRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new BusinessException(ReservationErrorCode.RESERVATION_NOT_FOUND));
     }
 
@@ -80,7 +83,8 @@ public class ReservationService {
 
     @Transactional
     public void cancelReservation(Long id) {
-        Reservation reservation = getReservation(id);
+        Reservation reservation = reservationRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ReservationErrorCode.RESERVATION_NOT_FOUND));
 
         if (reservation.getStatus() == ReservationStatus.CANCELLED) {
             throw new BusinessException(ReservationErrorCode.RESERVATION_ALREADY_CANCELLED);
