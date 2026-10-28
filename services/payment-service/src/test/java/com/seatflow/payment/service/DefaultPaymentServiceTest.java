@@ -2,6 +2,9 @@ package com.seatflow.payment.service;
 
 import com.seatflow.common.client.CouponClient;
 import com.seatflow.common.client.ReservationClient;
+import com.seatflow.common.event.EventTopic;
+import com.seatflow.common.event.payment.PaymentRefundFailedEvent;
+import com.seatflow.common.event.payment.PaymentRefundedEvent;
 import com.seatflow.common.exception.BusinessException;
 import com.seatflow.common.outbox.jpa.OutboxAppender;
 import com.seatflow.common.response.ApiResponse;
@@ -331,7 +334,7 @@ class DefaultPaymentServiceTest {
             paymentService.executeRefund(100L, 1L, BigDecimal.valueOf(45000));
 
             assertThat(payment.getStatus()).isEqualTo(PaymentStatus.REFUNDED);
-            verify(outboxAppender).append(any(), anyString(), anyString(), any());
+            verifyRefunded(BigDecimal.valueOf(45000));
         }
 
         @Test
@@ -349,7 +352,7 @@ class DefaultPaymentServiceTest {
             paymentService.executeRefund(100L, 1L, BigDecimal.valueOf(45000));
 
             assertThat(payment.getStatus()).isEqualTo(PaymentStatus.COMPLETED);   // 안 바뀜
-            verify(outboxAppender).append(any(), anyString(), anyString(), any());
+            verifyRefundFailed("PG 환불 승인 거절");
         }
 
         @Test
@@ -362,7 +365,7 @@ class DefaultPaymentServiceTest {
 
             paymentService.executeRefund(100L, 1L, BigDecimal.valueOf(45000));
 
-            verify(outboxAppender).append(any(), anyString(), anyString(), any());
+            verifyRefundFailed("결제 내역을 찾을 수 없음");
             verify(strategyRegistry, never()).get(any());
         }
 
@@ -371,8 +374,9 @@ class DefaultPaymentServiceTest {
         void republishesSuccessForAlreadyRefundedPayment() {
             Payment refundedPayment = Payment.builder()
                     .paymentMethod(PaymentMethod.CREDIT_CARD)
-                    .status(PaymentStatus.REFUNDED)
+                    .status(PaymentStatus.COMPLETED)
                     .build();
+            refundedPayment.refund(BigDecimal.valueOf(45000));
             given(paymentRepository.findByReservationIdAndStatus(1L, PaymentStatus.COMPLETED))
                     .willReturn(Optional.empty());
             given(paymentRepository.findByReservationIdAndStatus(1L, PaymentStatus.REFUNDED))
@@ -381,7 +385,7 @@ class DefaultPaymentServiceTest {
             paymentService.executeRefund(100L, 1L, BigDecimal.valueOf(45000));
 
             verify(strategyRegistry, never()).get(any());   // PG 재호출 안 함
-            verify(outboxAppender).append(any(), anyString(), anyString(), any());
+            verifyRefunded(BigDecimal.valueOf(45000));
         }
 
         @Test
@@ -425,7 +429,7 @@ class DefaultPaymentServiceTest {
 
             assertThat(payment.getStatus()).isEqualTo(PaymentStatus.REFUNDED);
             assertThat(payment.isCouponRestorePending()).isTrue();   // 재처리 대상으로 남는다
-            verify(outboxAppender).append(any(), anyString(), anyString(), any());
+            verifyRefunded(BigDecimal.valueOf(45000));
         }
 
         @Test
@@ -466,6 +470,16 @@ class DefaultPaymentServiceTest {
 
             verify(couponClient).restoreCoupon(1L);
             assertThat(payment.isCouponRestorePending()).isFalse();
+        }
+
+        private void verifyRefunded(BigDecimal refundedAmount) {
+            verify(outboxAppender).append(eq(EventTopic.PAYMENT_REFUNDED), eq("payment-service"), eq("1"),
+                    eq(new PaymentRefundedEvent(100L, 1L, refundedAmount)));
+        }
+
+        private void verifyRefundFailed(String reason) {
+            verify(outboxAppender).append(eq(EventTopic.PAYMENT_REFUND_FAILED), eq("payment-service"), eq("1"),
+                    eq(new PaymentRefundFailedEvent(100L, 1L, reason)));
         }
 
         private Payment refundedPaymentWithPendingCoupon() {
