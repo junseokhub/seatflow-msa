@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -34,6 +35,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 여기서는 그 전제를 깔고, 인증된 상태에서 각 엔드포인트가 서비스 메서드를 올바른 파라미터로 호출하고 응답을 올바르게 조립하는지만 확인한다.
  * 이 API를 외부에서 직접(Kong 등을 거쳐) 호출할 수 있는지는 Kong/Ingress 라우팅 설정의 몫이라 이 테스트 범위 밖이다.
  * 원래는 내부 전용으로 노출을 막아야 하는 지점이라는 것만 참고로 남겨둔다.
+ *
+ * 변경: 위의 사용자 토큰 전파 전제는 더 이상 쓰지 않는다. /internal/**은 ROLE_SERVICE(서비스 토큰)만 허용하므로
+ * 정상 호출은 서비스 권한으로, 사용자 토큰은 403이 나는지로 권한 경계를 확인한다.
  */
 @WebMvcTest(controllers = CouponInternalController.class)
 @ContextConfiguration(classes = {CouponInternalController.class, SecurityConfig.class})
@@ -63,7 +67,7 @@ class CouponInternalControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(username = "payment-service", roles = "SERVICE")
     @DisplayName("validate는 couponId, userId를 그대로 서비스에 전달하고 할인액을 응답한다")
     void validateDelegatesToService() throws Exception {
         given(couponService.validateForReservation(1L, "user1"))
@@ -78,7 +82,7 @@ class CouponInternalControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(username = "payment-service", roles = "SERVICE")
     @DisplayName("confirm은 couponId, userId, reservationId를 그대로 서비스에 전달한다")
     void confirmDelegatesToServiceWithAllParams() throws Exception {
         mockMvc.perform(post("/internal/coupons/1/confirm")
@@ -91,7 +95,7 @@ class CouponInternalControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(username = "payment-service", roles = "SERVICE")
     @DisplayName("restore는 reservationId만으로 복원을 호출한다")
     void restoreDelegatesToServiceWithReservationId() throws Exception {
         mockMvc.perform(post("/internal/coupons/reservations/100/restore"))
@@ -99,6 +103,16 @@ class CouponInternalControllerTest {
                 .andExpect(jsonPath("$.success").value(true));
 
         verify(couponService).restoreByReservation(100L);
+    }
+
+    @Test
+    @WithMockUser(username = "user1", roles = "USER")
+    @DisplayName("사용자 토큰으로 내부 API를 직접 호출하면 403이 나고 서비스는 호출되지 않는다")
+    void userTokenCannotCallInternalApi() throws Exception {
+        mockMvc.perform(post("/internal/coupons/reservations/100/restore"))
+                .andExpect(status().isForbidden());
+
+        verify(couponService, never()).restoreByReservation(any());
     }
 
     @Test

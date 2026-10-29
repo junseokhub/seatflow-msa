@@ -26,4 +26,8 @@ dependencies {
     // 서킷 브레이커. Feign은 spring-cloud-starter-circuitbreaker-resilience4j를 통해
     // circuitBreakerFactory를 자동으로 연동한다(spring.cloud.openfeign.circuitbreaker.enabled).
     api("org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j")
+
+    // 서비스 간 호출(/internal/**)에 쓸 서비스 토큰을 OAuth2 Client Credentials로 받아온다.
+    // 토큰 캐시와 만료 전 재발급은 OAuth2AuthorizedClientManager가 맡는다.
+    api("org.springframework.boot:spring-boot-starter-oauth2-client")
 }
