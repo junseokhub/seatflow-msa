@@ -54,6 +54,25 @@ public class JwtProvider {
                 .compact();
     }
 
+    /**
+     * 서비스 토큰. subject가 사용자 id가 아니라 client_id(서비스 이름)이고 role은 SERVICE다.
+     * 탈취돼도 피해가 작도록 사용자 access token보다 수명을 짧게 둔다.
+     */
+    public String generateServiceToken(String clientId) {
+        return Jwts.builder()
+                .subject(clientId)
+                .claim("role", Role.SERVICE.name())
+                .claim("type", "service")
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + jwtProperties.getServiceTokenExpiration()))
+                .signWith(getPrivateKey())
+                .compact();
+    }
+
+    public long getServiceTokenExpiration() {
+        return jwtProperties.getServiceTokenExpiration();
+    }
+
     public Claims getClaims(String token) {
         return jwtValidator.validate(token);
     }

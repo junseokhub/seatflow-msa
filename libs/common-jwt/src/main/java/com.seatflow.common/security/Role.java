@@ -7,5 +7,10 @@ package com.seatflow.common.security;
  */
 public enum Role {
     USER,
-    ADMIN
+    ADMIN,
+    /**
+     * 사용자가 아닌 서비스 자체의 신원. OAuth2 Client Credentials로 발급된 서비스 토큰에만 담기며,
+     * /internal/** 같은 서비스 간 전용 API는 이 권한만 허용한다.
+     */
+    SERVICE
 }

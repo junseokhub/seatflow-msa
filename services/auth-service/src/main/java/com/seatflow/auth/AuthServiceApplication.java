@@ -1,6 +1,7 @@
 package com.seatflow.auth;
 
 import com.seatflow.auth.config.properties.JwtProperties;
+import com.seatflow.auth.config.properties.ServiceClientProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -17,7 +18,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 		"com.seatflow.auth.repository",
 		"com.seatflow.common.outbox.jpa"
 })
-@EnableConfigurationProperties(JwtProperties.class)
+@EnableConfigurationProperties({JwtProperties.class, ServiceClientProperties.class})
 @EnableScheduling
 public class AuthServiceApplication {
 	public static void main(String[] args) {
