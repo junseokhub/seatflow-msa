@@ -8,6 +8,8 @@ package com.seatflow.common.client;
  * 이 빈은 인터셉터일 뿐 특정 FeignClient에 의존하지 않으므로,
  * common-clients를 의존하는 어떤 서비스에도 안전하게 등록할 수 있다(URL 프로퍼티가 없어도 이 빈 자체는 실패하지 않는다.
  * @FeignClient 인터페이스만 URL을 필요로 한다).
+ *
+ * 변경: /internal/** 호출에는 사용자 토큰을 싣지 않는다. 내부 API는 서비스 토큰(ServiceAuthFeignConfig)으로만 인가한다.
  */
 
 import feign.RequestInterceptor;
@@ -24,6 +26,9 @@ public class FeignAuthConfig {
     @Bean
     public RequestInterceptor authForwardingInterceptor() {
         return (RequestTemplate template) -> {
+            if (template.path().startsWith(ServiceAuthFeignConfig.INTERNAL_PATH_PREFIX)) {
+                return;   // 내부 API는 서비스 토큰으로 호출한다(사용자 토큰을 내부로 흘리지 않음)
+            }
             ServletRequestAttributes attributes =
                     (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
             if (attributes == null) {
