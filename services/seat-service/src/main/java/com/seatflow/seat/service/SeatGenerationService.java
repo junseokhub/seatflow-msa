@@ -66,13 +66,10 @@ public class SeatGenerationService {
 
             for (int rowIdx = 0; rowIdx < totalRows; rowIdx++) {
                 String seatRow    = rowLabel(rowIdx);
-                int seatsInRow    = (rowIdx < totalRows - 1)
-                        ? SEATS_PER_ROW
-                        : capacity - rowIdx * SEATS_PER_ROW; // 마지막 행 나머지
+                int seatsInRow    = Math.min(SEATS_PER_ROW, capacity - rowIdx * SEATS_PER_ROW);
                 int posY = globalRow + rowIdx;
 
                 for (int col = 0; col < seatsInRow; col++) {
-                    int seatNumber = rowIdx * SEATS_PER_ROW + col + 1; // 1-base 전체 번호
                     seats.add(Seat.builder()
                             .showId(event.showId())
                             .showDate(event.showDate())
