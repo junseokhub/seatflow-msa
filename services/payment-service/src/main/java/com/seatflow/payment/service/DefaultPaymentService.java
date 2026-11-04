@@ -53,13 +53,10 @@ public class DefaultPaymentService implements PaymentService {
 
         // 쿠폰 검증 -> 할인 계산. PG(mock)를 부르기 전에 최종 금액을 확정한다.
         // PG는 할인 개념을 몰라도 되고 몰라야 한다. payAmount만 받아 처리한다.
-        BigDecimal payAmount = reservation.amount();
-        BigDecimal discountAmount = BigDecimal.ZERO;
-        if (command.couponId() != null) {
-            var validation = validateCoupon(command.couponId(), command.userId());
-            discountAmount = validation.discountAmount();
-            payAmount = reservation.amount().subtract(discountAmount);
-        }
+        BigDecimal discountAmount = command.couponId() == null
+                ? BigDecimal.ZERO
+                : validateCoupon(command.couponId(), command.userId()).discountAmount();
+        BigDecimal payAmount = reservation.amount().subtract(discountAmount);
 
         Payment payment = Payment.builder()
                 .reservationId(command.reservationId())
