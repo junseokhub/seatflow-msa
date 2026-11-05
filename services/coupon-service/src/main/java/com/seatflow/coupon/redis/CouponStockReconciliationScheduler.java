@@ -9,7 +9,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * CouponRedisProvider의 TTL 방식(issue -> confirmIssued)은 "사용자가 영구히 막히는 문제"는 막지만, 재고(remaining) 카운터 자체의 미세 누수는 못 막는다.
@@ -37,13 +36,10 @@ public class CouponStockReconciliationScheduler {
 
     @Scheduled(fixedDelay = 300_000)   // 5분마다. TTL(30초)보다 충분히 길어야 PENDING 오판을 피한다.
     public void reconcile() {
-        List<CouponCampaign> activeCampaigns = campaignRepository.findAll().stream()
-                .filter(c -> !c.isExpired(LocalDateTime.now()))
-                .toList();
-
-        for (CouponCampaign campaign : activeCampaigns) {
-            reconcileCampaign(campaign);
-        }
+        LocalDateTime now = LocalDateTime.now();
+        campaignRepository.findAll().stream()
+                .filter(c -> !c.isExpired(now))
+                .forEach(this::reconcileCampaign);
     }
 
     private void reconcileCampaign(CouponCampaign campaign) {
