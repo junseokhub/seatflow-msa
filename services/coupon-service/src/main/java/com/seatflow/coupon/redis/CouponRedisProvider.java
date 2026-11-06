@@ -56,10 +56,7 @@ public class CouponRedisProvider {
 
                 return 1
                 """;
-        DefaultRedisScript<Long> redisScript = new DefaultRedisScript<>();
-        redisScript.setScriptText(script);
-        redisScript.setResultType(Long.class);
-        return redisScript;
+        return new DefaultRedisScript<>(script, Long.class);
     }
 
     /**
@@ -84,10 +81,7 @@ public class CouponRedisProvider {
 
                 return 1
                 """;
-        DefaultRedisScript<Long> redisScript = new DefaultRedisScript<>();
-        redisScript.setScriptText(script);
-        redisScript.setResultType(Long.class);
-        return redisScript;
+        return new DefaultRedisScript<>(script, Long.class);
     }
 
     /**
