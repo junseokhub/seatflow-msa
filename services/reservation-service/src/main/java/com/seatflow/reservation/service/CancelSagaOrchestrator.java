@@ -207,10 +207,7 @@ public class CancelSagaOrchestrator {
 
         saga.markFailed();
 
-        Reservation reservation = reservationRepository.findById(reservationId).orElse(null);
-        if (reservation != null) {
-            reservation.revertCancelling();   // CANCELLING -> CONFIRMED (원상복구)
-        }
+        reservationRepository.findById(reservationId).ifPresent(Reservation::revertCancelling);   // CANCELLING -> CONFIRMED (원상복구)
 
         log.info("Cancel saga failed and compensated (reservation restored): sagaId={}, reservationId={}",
                 sagaId, reservationId);
