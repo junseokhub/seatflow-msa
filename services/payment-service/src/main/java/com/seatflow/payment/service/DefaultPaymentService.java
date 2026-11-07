@@ -194,9 +194,8 @@ public class DefaultPaymentService implements PaymentService {
     public void executeRefund(Long sagaId, Long reservationId, BigDecimal refundAmount) {
         Payment payment = paymentRepository
                 .findByReservationIdAndStatus(reservationId, PaymentStatus.COMPLETED)
-                .orElseGet(() -> paymentRepository
-                        .findByReservationIdAndStatus(reservationId, PaymentStatus.REFUNDED)
-                        .orElse(null));
+                .or(() -> paymentRepository.findByReservationIdAndStatus(reservationId, PaymentStatus.REFUNDED))
+                .orElse(null);
 
         if (payment == null) {
             log.warn("Payment not found for refund: sagaId={}, reservationId={}", sagaId, reservationId);
