@@ -156,10 +156,7 @@ public class CancelSagaOrchestrator {
         saga.markRefunded();
         saga.markCompleted();
 
-        Reservation reservation = reservationRepository.findById(reservationId).orElse(null);
-        if (reservation != null) {
-            reservation.cancel();   // CANCELLING -> CANCELLED
-        }
+        reservationRepository.findById(reservationId).ifPresent(Reservation::cancel);   // CANCELLING -> CANCELLED
 
         log.info("Cancel saga completed: sagaId={}, reservationId={}", sagaId, reservationId);
     }
