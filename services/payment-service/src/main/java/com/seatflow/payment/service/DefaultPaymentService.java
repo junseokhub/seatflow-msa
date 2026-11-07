@@ -92,11 +92,9 @@ public class DefaultPaymentService implements PaymentService {
             throw new BusinessException(PaymentErrorCode.AMOUNT_MISMATCH);
         }
 
-        paymentRepository
-                .findByReservationIdAndStatus(command.reservationId(), PaymentStatus.COMPLETED)
-                .ifPresent(p -> {
-                    throw new BusinessException(PaymentErrorCode.PAYMENT_ALREADY_COMPLETED);
-                });
+        if (paymentRepository.findByReservationIdAndStatus(command.reservationId(), PaymentStatus.COMPLETED).isPresent()) {
+            throw new BusinessException(PaymentErrorCode.PAYMENT_ALREADY_COMPLETED);
+        }
     }
 
     private void completePayment(Payment payment, ProcessPaymentCommand command) {
