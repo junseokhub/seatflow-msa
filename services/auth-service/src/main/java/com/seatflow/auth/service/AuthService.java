@@ -88,7 +88,7 @@ public class AuthService {
         String userId = claims.getSubject();
 
         String stored = redisProvider.getRefreshToken(userId);
-        if (stored == null || !stored.equals(refreshToken)) {
+        if (!refreshToken.equals(stored)) {
             redisProvider.deleteRefreshToken(userId);
             throw new BusinessException(AuthErrorCode.INVALID_TOKEN);
         }
