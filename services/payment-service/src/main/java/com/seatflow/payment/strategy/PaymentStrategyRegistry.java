@@ -2,6 +2,7 @@ package com.seatflow.payment.strategy;
 
 import com.seatflow.payment.domain.PaymentMethod;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import java.util.Collections;
 import java.util.List;
@@ -14,7 +15,7 @@ public class PaymentStrategyRegistry {
     private final Map<PaymentMethod, PaymentStrategy> registry;
 
     public PaymentStrategyRegistry(List<PaymentStrategy> strategies) {
-        if (strategies == null || strategies.isEmpty()) {
+        if (CollectionUtils.isEmpty(strategies)) {
             throw new IllegalStateException("등록된 결제 전략이 없습니다.");
         }
 
