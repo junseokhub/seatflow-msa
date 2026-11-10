@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 @Slf4j
 @Component
@@ -42,7 +43,7 @@ public class ShowCreatedEventConsumer {
 
         ShowCreatedEvent payload = event.payload();
         if (payload == null || payload.showId() == null || payload.showDate() == null
-                || payload.grades() == null || payload.grades().isEmpty()) {
+                || CollectionUtils.isEmpty(payload.grades())) {
             log.error("Incomplete show.created payload, skip: {}", payload);
             throw new IllegalStateException("Incomplete show.created payload: " + payload);
         }
