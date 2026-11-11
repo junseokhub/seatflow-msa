@@ -31,7 +31,7 @@ public class SeatRedisProvider {
                 .toList();
         Long result = redisTemplate.execute(HOLD_ALL, keys,
                 userId, String.valueOf(HOLD_TTL_MINUTES * 60));
-        return result != null && result == 1;
+        return Long.valueOf(1L).equals(result);
     }
 
     /**
