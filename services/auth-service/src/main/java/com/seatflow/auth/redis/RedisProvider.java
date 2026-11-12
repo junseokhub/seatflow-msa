@@ -48,7 +48,7 @@ public class RedisProvider {
     public long incrementLoginFail(String email) {
         String key = LOGIN_FAIL_PREFIX + email;
         Long count = redisTemplate.opsForValue().increment(key);
-        if (count != null && count == 1L) {
+        if (Long.valueOf(1L).equals(count)) {
             redisTemplate.expire(key, 15, TimeUnit.MINUTES);
         }
         return count == null ? 0 : count;
