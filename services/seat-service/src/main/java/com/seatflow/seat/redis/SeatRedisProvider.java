@@ -7,6 +7,7 @@ import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 @Component
@@ -21,7 +22,7 @@ public class SeatRedisProvider {
     public long releaseIfOwner(String showId, Long seatId, String userId) {
         Long result = redisTemplate.execute(
                 RELEASE_IF_OWNER, List.of(holdKey(showId, seatId)), userId);
-        return result == null ? -1 : result;
+        return Objects.requireNonNullElse(result, -1L);
     }
 
     // 여러 좌석을 한 덩어리로 점유 (전부 아니면 전무)
