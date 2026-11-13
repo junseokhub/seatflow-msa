@@ -7,6 +7,7 @@ import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 결제 요청의 인프라 레벨 멱등성(1층). 같은 Idempotency-Key를 가진 요청이
@@ -52,7 +53,7 @@ public class IdempotencyProvider {
                 TRY_ACQUIRE,
                 List.of(key(idempotencyKey)),
                 STATE_PROCESSING, String.valueOf(TTL_SECONDS), STATE_DONE);
-        return result == null ? 0 : result;
+        return Objects.requireNonNullElse(result, 0L);
     }
 
     /** 처리 완료로 표시(같은 키 재요청이 -1로 거절되게). TTL은 유지해 일정 기간 후 자동 정리. */
