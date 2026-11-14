@@ -6,6 +6,7 @@ import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 쿠폰 발급의 1차 판단(재고 차감, 1인 1매)을 Redis에서 원자적으로 처리한다.
@@ -93,7 +94,7 @@ public class CouponRedisProvider {
                 issueCouponScript,
                 List.of(remainingKey(campaignId), issuedKey(campaignId, userId)),
                 String.valueOf(PENDING_TTL_SECONDS));
-        return result == null ? 0L : result;
+        return Objects.requireNonNullElse(result, 0L);
     }
 
     /** MySQL 저장 성공 후 반드시 호출
