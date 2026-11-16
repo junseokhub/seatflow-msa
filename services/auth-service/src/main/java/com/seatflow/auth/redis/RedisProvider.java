@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 @Component
@@ -51,7 +52,7 @@ public class RedisProvider {
         if (Long.valueOf(1L).equals(count)) {
             redisTemplate.expire(key, 15, TimeUnit.MINUTES);
         }
-        return count == null ? 0 : count;
+        return Objects.requireNonNullElse(count, 0L);
     }
     // 로그인 실패 횟수 초기화
     public void resetLoginFail(String email) {
