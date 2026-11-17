@@ -108,7 +108,7 @@ public class CouponRedisProvider {
         Long result = redisTemplate.execute(
                 confirmCouponScript,
                 List.of(issuedKey(campaignId, userId)));
-        if (result == null || result == 0L) {
+        if (Objects.requireNonNullElse(result, 0L) == 0L) {
             /*
             * TTL이 이미 지나 마킹이 사라진 뒤 confirm이 뒤늦게 온 비정상 케이스.
             * MySQL엔 저장됐는데 Redis 마킹이 없어진 상태라, 이 사용자가 재시도하면 Redis는 발급 가능으로 보고 다시 발급을 내줄 수 있다.
