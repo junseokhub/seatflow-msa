@@ -7,5 +7,7 @@ import java.util.Optional;
 
 public interface CancelSagaRepository extends JpaRepository<CancelSaga, Long> {
     Optional<CancelSaga> findByReservationId(Long reservationId);
+
+    boolean existsByReservationId(Long reservationId);
 }
  
