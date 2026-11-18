@@ -85,7 +85,7 @@ class CancelSagaOrchestratorTest {
             Reservation reservation = reservationWithStatus(
                     ReservationStatus.CONFIRMED, LocalDateTime.now().plusDays(10));
             given(reservationRepository.findById(100L)).willReturn(Optional.of(reservation));
-            given(cancelSagaRepository.findByReservationId(100L)).willReturn(Optional.empty());
+            given(cancelSagaRepository.existsByReservationId(100L)).willReturn(false);
             given(cancelSagaRepository.save(any(CancelSaga.class)))
                     .willAnswer(invocation -> invocation.getArgument(0));
 
@@ -102,7 +102,7 @@ class CancelSagaOrchestratorTest {
             Reservation reservation = reservationWithStatus(
                     ReservationStatus.CONFIRMED, LocalDateTime.now().plusDays(15));
             given(reservationRepository.findById(100L)).willReturn(Optional.of(reservation));
-            given(cancelSagaRepository.findByReservationId(100L)).willReturn(Optional.empty());
+            given(cancelSagaRepository.existsByReservationId(100L)).willReturn(false);
 
             ArgumentCaptor<CancelSaga> captor = ArgumentCaptor.forClass(CancelSaga.class);
             given(cancelSagaRepository.save(captor.capture()))
@@ -153,8 +153,7 @@ class CancelSagaOrchestratorTest {
             Reservation reservation = reservationWithStatus(
                     ReservationStatus.CONFIRMED, LocalDateTime.now().plusDays(10));
             given(reservationRepository.findById(100L)).willReturn(Optional.of(reservation));
-            given(cancelSagaRepository.findByReservationId(100L))
-                    .willReturn(Optional.of(sagaWithStatus(CancelSagaStatus.STARTED)));
+            given(cancelSagaRepository.existsByReservationId(100L)).willReturn(true);
 
             assertThatThrownBy(() -> orchestrator.startCancellation(100L, "user1"))
                     .isInstanceOf(BusinessException.class)
@@ -167,7 +166,7 @@ class CancelSagaOrchestratorTest {
             Reservation reservation = reservationWithStatus(
                     ReservationStatus.CONFIRMED, LocalDateTime.now().minusHours(1));   // 이미 지남
             given(reservationRepository.findById(100L)).willReturn(Optional.of(reservation));
-            given(cancelSagaRepository.findByReservationId(100L)).willReturn(Optional.empty());
+            given(cancelSagaRepository.existsByReservationId(100L)).willReturn(false);
 
             assertThatThrownBy(() -> orchestrator.startCancellation(100L, "user1"))
                     .isInstanceOf(BusinessException.class)
