@@ -92,7 +92,7 @@ public class DefaultPaymentService implements PaymentService {
             throw new BusinessException(PaymentErrorCode.AMOUNT_MISMATCH);
         }
 
-        if (paymentRepository.findByReservationIdAndStatus(command.reservationId(), PaymentStatus.COMPLETED).isPresent()) {
+        if (paymentRepository.existsByReservationIdAndStatus(command.reservationId(), PaymentStatus.COMPLETED)) {
             throw new BusinessException(PaymentErrorCode.PAYMENT_ALREADY_COMPLETED);
         }
     }

@@ -116,8 +116,8 @@ class DefaultPaymentServiceTest {
         void throwsWhenAlreadyCompleted() {
             given(reservationClient.getReservation(1L))
                     .willReturn(ApiResponse.ok(pendingReservationView(BigDecimal.valueOf(50000))));
-            given(paymentRepository.findByReservationIdAndStatus(1L, PaymentStatus.COMPLETED))
-                    .willReturn(Optional.of(Payment.builder().status(PaymentStatus.COMPLETED).build()));
+            given(paymentRepository.existsByReservationIdAndStatus(1L, PaymentStatus.COMPLETED))
+                    .willReturn(true);
 
             assertThatThrownBy(() -> paymentService.executePayment(command(BigDecimal.valueOf(50000), null)))
                     .isInstanceOf(BusinessException.class)
@@ -144,8 +144,8 @@ class DefaultPaymentServiceTest {
         void completesPaymentAndPublishesEvent() {
             given(reservationClient.getReservation(1L))
                     .willReturn(ApiResponse.ok(pendingReservationView(BigDecimal.valueOf(50000))));
-            given(paymentRepository.findByReservationIdAndStatus(1L, PaymentStatus.COMPLETED))
-                    .willReturn(Optional.empty());
+            given(paymentRepository.existsByReservationIdAndStatus(1L, PaymentStatus.COMPLETED))
+                    .willReturn(false);
             given(strategyRegistry.get(PaymentMethod.CREDIT_CARD)).willReturn(paymentStrategy);
             given(paymentStrategy.process(anyString(), any())).willReturn(true);
 
@@ -161,8 +161,8 @@ class DefaultPaymentServiceTest {
         void failsPaymentAndPublishesFailedEvent() {
             given(reservationClient.getReservation(1L))
                     .willReturn(ApiResponse.ok(pendingReservationView(BigDecimal.valueOf(50000))));
-            given(paymentRepository.findByReservationIdAndStatus(1L, PaymentStatus.COMPLETED))
-                    .willReturn(Optional.empty());
+            given(paymentRepository.existsByReservationIdAndStatus(1L, PaymentStatus.COMPLETED))
+                    .willReturn(false);
             given(strategyRegistry.get(PaymentMethod.CREDIT_CARD)).willReturn(paymentStrategy);
             given(paymentStrategy.process(anyString(), any())).willReturn(false);
 
@@ -177,8 +177,8 @@ class DefaultPaymentServiceTest {
         void throwsWhenFlushViolatesUniqueConstraint() {
             given(reservationClient.getReservation(1L))
                     .willReturn(ApiResponse.ok(pendingReservationView(BigDecimal.valueOf(50000))));
-            given(paymentRepository.findByReservationIdAndStatus(1L, PaymentStatus.COMPLETED))
-                    .willReturn(Optional.empty());
+            given(paymentRepository.existsByReservationIdAndStatus(1L, PaymentStatus.COMPLETED))
+                    .willReturn(false);
             given(strategyRegistry.get(PaymentMethod.CREDIT_CARD)).willReturn(paymentStrategy);
             given(paymentStrategy.process(anyString(), any())).willReturn(true);
             doThrow(new DataIntegrityViolationException("duplicate"))
@@ -199,8 +199,8 @@ class DefaultPaymentServiceTest {
         void appliesDiscountAndConfirmsCouponOnSuccess() {
             given(reservationClient.getReservation(1L))
                     .willReturn(ApiResponse.ok(pendingReservationView(BigDecimal.valueOf(50000))));
-            given(paymentRepository.findByReservationIdAndStatus(1L, PaymentStatus.COMPLETED))
-                    .willReturn(Optional.empty());
+            given(paymentRepository.existsByReservationIdAndStatus(1L, PaymentStatus.COMPLETED))
+                    .willReturn(false);
             var couponView = new CouponClient.CouponValidationView(10L, true, BigDecimal.valueOf(5000));
             given(couponClient.validateCoupon(10L, "user1")).willReturn(ApiResponse.ok(couponView));
             given(strategyRegistry.get(PaymentMethod.CREDIT_CARD)).willReturn(paymentStrategy);
@@ -224,8 +224,8 @@ class DefaultPaymentServiceTest {
         void throwsWhenCouponInvalid() {
             given(reservationClient.getReservation(1L))
                     .willReturn(ApiResponse.ok(pendingReservationView(BigDecimal.valueOf(50000))));
-            given(paymentRepository.findByReservationIdAndStatus(1L, PaymentStatus.COMPLETED))
-                    .willReturn(Optional.empty());
+            given(paymentRepository.existsByReservationIdAndStatus(1L, PaymentStatus.COMPLETED))
+                    .willReturn(false);
             var invalidCoupon = new CouponClient.CouponValidationView(10L, false, BigDecimal.ZERO);
             given(couponClient.validateCoupon(10L, "user1")).willReturn(ApiResponse.ok(invalidCoupon));
 
@@ -241,8 +241,8 @@ class DefaultPaymentServiceTest {
         void throwsCouponInvalidWhenValidationCallFails() {
             given(reservationClient.getReservation(1L))
                     .willReturn(ApiResponse.ok(pendingReservationView(BigDecimal.valueOf(50000))));
-            given(paymentRepository.findByReservationIdAndStatus(1L, PaymentStatus.COMPLETED))
-                    .willReturn(Optional.empty());
+            given(paymentRepository.existsByReservationIdAndStatus(1L, PaymentStatus.COMPLETED))
+                    .willReturn(false);
             given(couponClient.validateCoupon(10L, "user1")).willThrow(new RuntimeException("network error"));
 
             assertThatThrownBy(() -> paymentService.executePayment(command(BigDecimal.valueOf(50000), 10L)))
@@ -255,8 +255,8 @@ class DefaultPaymentServiceTest {
         void paymentStaysCompletedEvenIfCouponConfirmFails() {
             given(reservationClient.getReservation(1L))
                     .willReturn(ApiResponse.ok(pendingReservationView(BigDecimal.valueOf(50000))));
-            given(paymentRepository.findByReservationIdAndStatus(1L, PaymentStatus.COMPLETED))
-                    .willReturn(Optional.empty());
+            given(paymentRepository.existsByReservationIdAndStatus(1L, PaymentStatus.COMPLETED))
+                    .willReturn(false);
             var couponView = new CouponClient.CouponValidationView(10L, true, BigDecimal.valueOf(5000));
             given(couponClient.validateCoupon(10L, "user1")).willReturn(ApiResponse.ok(couponView));
             given(strategyRegistry.get(PaymentMethod.CREDIT_CARD)).willReturn(paymentStrategy);
@@ -275,8 +275,8 @@ class DefaultPaymentServiceTest {
         void doesNotConfirmCouponWhenPgFails() {
             given(reservationClient.getReservation(1L))
                     .willReturn(ApiResponse.ok(pendingReservationView(BigDecimal.valueOf(50000))));
-            given(paymentRepository.findByReservationIdAndStatus(1L, PaymentStatus.COMPLETED))
-                    .willReturn(Optional.empty());
+            given(paymentRepository.existsByReservationIdAndStatus(1L, PaymentStatus.COMPLETED))
+                    .willReturn(false);
             var couponView = new CouponClient.CouponValidationView(10L, true, BigDecimal.valueOf(5000));
             given(couponClient.validateCoupon(10L, "user1")).willReturn(ApiResponse.ok(couponView));
             given(strategyRegistry.get(PaymentMethod.CREDIT_CARD)).willReturn(paymentStrategy);
