@@ -7,6 +7,7 @@ import org.springframework.util.CollectionUtils;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Component
@@ -34,10 +35,7 @@ public class PaymentStrategyRegistry {
     }
 
     public PaymentStrategy get(PaymentMethod method) {
-        PaymentStrategy strategy = registry.get(method);
-        if (strategy == null) {
-            throw new IllegalArgumentException("지원하지 않는 결제 수단입니다: " + method);
-        }
-        return strategy;
+        return Optional.ofNullable(registry.get(method))
+                .orElseThrow(() -> new IllegalArgumentException("지원하지 않는 결제 수단입니다: " + method));
     }
 }
