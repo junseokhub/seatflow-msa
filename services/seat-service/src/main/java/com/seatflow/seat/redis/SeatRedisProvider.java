@@ -54,14 +54,12 @@ public class SeatRedisProvider {
 
     // 좌석 점유 해제. holdKey()로 통일 - 위 hold()와 같은 이유.
     public void release(String showId, Long seatId) {
-        String key = holdKey(showId, seatId);
-        redisTemplate.delete(key);
+        redisTemplate.delete(holdKey(showId, seatId));
     }
 
     // 점유 여부 확인. holdKey()로 통일 - 위 hold()와 같은 이유.
     public boolean isHeld(String showId, Long seatId) {
-        String key = holdKey(showId, seatId);
-        return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+        return Boolean.TRUE.equals(redisTemplate.hasKey(holdKey(showId, seatId)));
     }
 
     /**
