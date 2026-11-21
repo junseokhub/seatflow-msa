@@ -45,8 +45,7 @@ public class ReservationService {
      */
     @Transactional
     public void confirmReservation(Long reservationId) {
-        Reservation reservation = reservationRepository.findById(reservationId)
-                .orElse(null);
+        Reservation reservation = reservationRepository.findById(reservationId).orElse(null);
         if (reservation == null) {
             log.warn("Reservation not found for confirm, skip: reservationId={}", reservationId);
             return;
