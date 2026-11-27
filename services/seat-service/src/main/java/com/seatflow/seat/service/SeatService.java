@@ -69,13 +69,6 @@ public class SeatService {
             // 2. 점유를 쥔 상태에서 좌석들이 이미 팔렸는지 DB로 검증
             Map<Long, Seat> seatById = findHoldableSeats(seatIds);
 
-            // holdSeats의 "3. 좌석별 점유 이벤트 발행" 부분을 Outbox 적재로 교체.
-            // 기존엔 kafkaTemplate.send로 직접 발행(dual-write). 이제 Outbox에 적재하고
-            // 공통 OutboxScheduler가 발행을 보장한다. payment·reservation과 같은 패턴.
-            //
-            // 필드에 OutboxRepository, ObjectMapper(kafkaObjectMapper) 주입 필요.
-            // (kafkaTemplate은 SSE 등 다른 용도로 남을 수 있으니 유지 여부는 사용처 확인)
-
             // 3. 좌석별 점유 이벤트 발행 (가격·공연일을 함께 실어 reservation이 서버측 값 확보)
             //    Outbox에 적재 ->스케줄러가 발행 보장 (좌석 검증과 같은 트랜잭션)
             for (Long seatId : seatIds) {
@@ -113,8 +106,6 @@ public class SeatService {
         return seats.stream()
                 .collect(Collectors.toMap(Seat::getId, Function.identity()));
     }
-
-    // SeatService에 추가 (기존 필드에 SeatRepository, SeatRedisProvider 이미 있음)
 
     /**
      * 예매 확정(reservation.confirmed)으로 좌석을 확정 점유한다.
